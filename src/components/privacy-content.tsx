@@ -40,14 +40,9 @@ const POINTS: { h: string; body: React.ReactNode }[] = [
           <code className="rounded bg-surface-2 px-1.5 py-0.5 text-[13px] text-ink">
             drive.file
           </code>
-          ：只能存取這個 App 自己建立的檔案。
+          ：只能存取這個 App 自己建立的檔案——那個資料夾與紀錄試算表的
+          讀寫都靠它。
           <span className="text-muted"> 它看不到你雲端硬碟裡其他任何檔案。</span>
-        </li>
-        <li>
-          <code className="rounded bg-surface-2 px-1.5 py-0.5 text-[13px] text-ink">
-            spreadsheets
-          </code>
-          ：讀寫上面那份紀錄試算表。
         </li>
         <li>
           <code className="rounded bg-surface-2 px-1.5 py-0.5 text-[13px] text-ink">

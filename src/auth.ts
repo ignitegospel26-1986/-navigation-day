@@ -3,17 +3,18 @@ import Google from "next-auth/providers/google";
 
 /**
  * OAuth scopes — deliberately minimal.
- *  - drive.file      : create / read ONLY the files this app makes. It cannot
- *                      see anything else already in the user's Drive.
- *  - spreadsheets    : read / write the reset-system spreadsheet.
+ *  - drive.file      : create / read / write ONLY the files this app makes —
+ *                      the folder AND the spreadsheet (the Sheets API accepts
+ *                      drive.file for app-created files, so no broad
+ *                      `spreadsheets` scope is needed). Non-sensitive scope.
  *  - calendar.events : optional reminder sync into the user's own calendar.
+ *                      The only sensitive scope, requested for calendar sync.
  */
 const SCOPES = [
   "openid",
   "email",
   "profile",
   "https://www.googleapis.com/auth/drive.file",
-  "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/calendar.events",
 ].join(" ");
 
