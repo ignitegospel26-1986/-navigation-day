@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+/* next-themes toggles a theme class on <html>. `.navy` and the landing's
+   `.landing-dark` are dark-family themes, so the dark: variant covers them too. */
+@custom-variant dark (&:where(.dark, .dark *, .navy, .navy *, .landing-dark, .landing-dark *));
+
+/* ---------------------------------------------------------------------------
+   Design language
+   - Light  = "晨間紙感"  : warm paper, ink text, quiet clay accent
+   - Dark   = "深夜書寫"  : deep warm charcoal, low-contrast parchment text
+   Colours are intentionally low-saturation earth tones — no tech blue/purple.
+--------------------------------------------------------------------------- */
+:root {
+  --paper:        #f4efe4; /* page background            */
+  --surface:      #fbf7ee; /* raised cards               */
+  --surface-2:    #efe8d9; /* recessed / hover           */
+  --ink:          #26221c; /* primary text               */
+  --ink-soft:     #524b3f; /* secondary text             */
+  --muted:        #857c6b; /* tertiary text              */
+  --hairline:     #e0d7c4; /* borders / dividers         */
+  --accent:       #9a5f38; /* clay — primary action      */
+  --accent-soft:  #b98a5f; /* clay hover / on dark        */
+  --accent-tint:  #ece2d2; /* accent wash background     */
+  --danger:       #9c4a3c;
+  --shadow:       27 22 15;
+}
+
+.dark {
+  --paper:        #16130f;
+  --surface:      #1e1a14;
+  --surface-2:    #2a241c;
+  --ink:          #ece3d2;
+  --ink-soft:     #c3b8a3;
+  --muted:        #8f8574;
+  --hairline:     #2f2820;
+  --accent:       #c78d5b;
+  --accent-soft:  #dba874;
+  --accent-tint:  #26201a;
+  --danger:       #cf7a63;
+  --shadow:       0 0 0;
+}
+
+/* 深藍模式 — deep-blue ink surfaces with a warm brass accent */
+.navy {
+  --paper:        #0f1a29;
+  --surface:      #16273b;
+  --surface-2:    #203248;
+  --ink:          #dde7f3;
+  --ink-soft:     #adbccd;
+  --muted:        #708299;
+  --hairline:     #263a52;
+  --accent:       #d3a15d;
+  --accent-soft:  #e4bb84;
+  --accent-tint:  #172838;
+  --danger:       #d98b74;
+  --shadow:       0 0 0;
+}
+
+/* 深灰 — neutral dark grey, used only for the pre-login intro page */
+.landing-dark {
+  --paper:        #1b1c1e;
+  --surface:      #232427;
+  --surface-2:    #2d2e31;
+  --ink:          #ededee;
+  --ink-soft:     #c1c2c5;
+  --muted:        #8a8b8f;
+  --hairline:     #343538;
+  --accent:       #c78d5b;
+  --accent-soft:  #dba874;
+  --accent-tint:  #2a2622;
+  --danger:       #cf7a63;
+  --shadow:       0 0 0;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-hairline: var(--hairline);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-tint: var(--accent-tint);
+  --color-danger: var(--danger);
+
+  --font-serif: "Fraunces", "Noto Serif TC", Georgia, "Songti TC", serif;
+  --font-sans: ui-sans-serif, system-ui, "Noto Sans TC", "PingFang TC",
+    "Microsoft JhengHei", sans-serif;
+
+  --radius-xl: 1.25rem;
+}
+
+html {
+  color-scheme: light;
+}
+html.dark,
+html.navy {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  /* faint paper grain so flat colour never looks like a template */
+  background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(0, 0, 0, 0.018) 1px,
+      transparent 0
+    );
+  background-size: 4px 4px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: 0.005em;
+}
+.dark body,
+.navy body {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(255, 255, 255, 0.014) 1px,
+    transparent 0
+  );
+}
+
+/* Reusable primitives ----------------------------------------------------- */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.04),
+    0 12px 30px -18px rgb(var(--shadow) / 0.22);
+}
+
+.hairline {
+  border-color: var(--hairline);
+}
+
+/* Buttons ----------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease,
+    box-shadow 0.2s ease;
+  will-change: transform;
+}
+.btn:active {
+  transform: translateY(1px) scale(0.985);
+}
+.btn-primary {
+  background-color: var(--accent);
+  color: #fbf7ee;
+  box-shadow: 0 8px 22px -12px rgb(var(--shadow) / 0.6);
+}
+.btn-primary:hover {
+  background-color: var(--accent-soft);
+}
+.dark .btn-primary,
+.navy .btn-primary,
+.landing-dark .btn-primary {
+  color: #16130f;
+}
+.btn-ghost {
+  background-color: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--hairline);
+}
+.btn-ghost:hover {
+  background-color: var(--surface-2);
+  color: var(--ink);
+}
+
+/* Form fields ------------------------------------------------------------- */
+.field {
+  width: 100%;
+  background-color: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: 0.85rem;
+  color: var(--ink);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+.field::placeholder {
+  color: var(--muted);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint);
+  background-color: var(--surface);
+}
+
+/* Selection + focus polish */
+::selection {
+  background: var(--accent-tint);
+  color: var(--ink);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
