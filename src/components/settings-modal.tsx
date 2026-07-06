@@ -29,9 +29,10 @@ export function SettingsModal({
   const [weekStart, setWeekStart] = useWeekStart();
   const [prefs, setPrefs] = useState<ReminderPrefs>(DEFAULT_PREFS);
   const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
-  const [syncState, setSyncState] = useState<"idle" | "saving" | "done" | "error">(
-    "idle"
-  );
+  const [synced, setSynced] = useState<boolean | null>(null);
+  const [calStep, setCalStep] = useState<"idle" | "confirm">("idle");
+  const [calBusy, setCalBusy] = useState(false);
+  const [calMsg, setCalMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -39,7 +40,13 @@ export function SettingsModal({
     setPerm(
       typeof Notification === "undefined" ? "unsupported" : Notification.permission
     );
-    setSyncState("idle");
+    setCalStep("idle");
+    setCalBusy(false);
+    setCalMsg(null);
+    setSynced(null);
+    jsonFetch<{ synced: boolean }>("/api/calendar")
+      .then((d) => setSynced(d.synced))
+      .catch(() => setSynced(null));
   }, [open]);
 
   const update = (patch: Partial<ReminderPrefs>) => {
@@ -62,8 +69,9 @@ export function SettingsModal({
     }
   }
 
-  async function syncCalendar() {
-    setSyncState("saving");
+  async function doSync() {
+    setCalBusy(true);
+    setCalMsg(null);
     try {
       await jsonFetch("/api/calendar", {
         method: "POST",
@@ -75,9 +83,27 @@ export function SettingsModal({
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
       });
-      setSyncState("done");
+      setSynced(true);
+      setCalStep("idle");
+      setCalMsg("已同步到你的行事曆 ✓");
     } catch {
-      setSyncState("error");
+      setCalMsg("同步失敗，請再試一次。");
+    } finally {
+      setCalBusy(false);
+    }
+  }
+
+  async function doRemove() {
+    setCalBusy(true);
+    setCalMsg(null);
+    try {
+      await jsonFetch("/api/calendar", { method: "DELETE" });
+      setSynced(false);
+      setCalMsg("已從你的行事曆移除這些提醒。");
+    } catch {
+      setCalMsg("移除失敗，請再試一次。");
+    } finally {
+      setCalBusy(false);
     }
   }
 
@@ -219,26 +245,80 @@ export function SettingsModal({
         <section>
           <h3 className="text-[15px] font-medium text-ink">同步到 Google 行事曆</h3>
           <p className="mt-1 text-[13px] text-muted">
-            在<strong className="text-ink-soft">你自己的</strong>行事曆建立循環提醒：
-            平日每日打卡、週日整理、每季留一整天深度重啟。關閉 App 也會提醒你。
-            重複同步不會產生重複事件。
+            在<strong className="text-ink-soft">你自己的</strong>行事曆建立循環提醒，
+            關閉 App 也會提醒你。可隨時移除，或改時段後重新同步。
           </p>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={syncCalendar}
-              disabled={syncState === "saving"}
-              className="btn btn-primary px-5 py-2.5 text-sm disabled:opacity-50"
-            >
-              {syncState === "saving" ? "同步中⋯" : "同步到我的行事曆"}
-            </button>
-            {syncState === "done" && (
-              <span className="text-sm text-accent">已建立 ✓</span>
-            )}
-            {syncState === "error" && (
-              <span className="text-sm text-danger">同步失敗，請再試一次。</span>
-            )}
-          </div>
+
+          {calStep === "confirm" ? (
+            <div className="mt-3 rounded-xl border border-hairline bg-surface-2/50 p-4">
+              <p className="text-[13px] font-medium text-ink">
+                即將在你的 Google 行事曆建立這些循環提醒：
+              </p>
+              <ul className="mt-2 space-y-1 text-[13px] text-ink-soft">
+                <li>· 平日每天 {prefs.dailyTime}：每日打卡</li>
+                <li>· 每週日 {prefs.weeklyTime}：每週整理</li>
+                <li>· 每季一次：季度深度重啟（整天）</li>
+              </ul>
+              <p className="mt-2 text-[12px] text-muted">
+                重複同步會取代舊的，不會重複建立。要改時間，先到上方「提醒時段」調整。
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={doSync}
+                  disabled={calBusy}
+                  className="btn btn-primary px-4 py-2 text-sm disabled:opacity-50"
+                >
+                  {calBusy ? "同步中⋯" : "確認同步"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalStep("idle")}
+                  disabled={calBusy}
+                  className="btn btn-ghost px-4 py-2 text-sm"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="mt-2 text-[13px]">
+                目前狀態：
+                {synced === null ? (
+                  <span className="text-muted">查詢中⋯</span>
+                ) : synced ? (
+                  <span className="text-accent">已同步 ✓</span>
+                ) : (
+                  <span className="text-muted">尚未同步</span>
+                )}
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCalMsg(null);
+                    setCalStep("confirm");
+                  }}
+                  className="btn btn-primary px-5 py-2.5 text-sm"
+                >
+                  {synced ? "重新同步 / 更新時間" : "同步到我的行事曆"}
+                </button>
+                {synced && (
+                  <button
+                    type="button"
+                    onClick={doRemove}
+                    disabled={calBusy}
+                    className="btn btn-ghost px-4 py-2.5 text-sm disabled:opacity-50"
+                  >
+                    {calBusy ? "移除中⋯" : "移除行事曆提醒"}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          {calMsg && <p className="mt-2 text-[13px] text-ink-soft">{calMsg}</p>}
         </section>
       </div>
     </Modal>

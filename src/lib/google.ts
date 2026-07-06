@@ -373,23 +373,67 @@ export async function syncReminders(
 
   const created: string[] = [];
   for (const spec of specs) {
-    // remove any previous series of this type
-    const existing = await cal.events.list({
-      calendarId: "primary",
-      privateExtendedProperty: [`lifeReset=${spec.type}`],
-      singleEvents: false,
-      showDeleted: false,
-      maxResults: 50,
-    });
-    for (const ev of existing.data.items ?? []) {
-      if (ev.id)
-        await cal.events.delete({ calendarId: "primary", eventId: ev.id });
-    }
+    await deleteRemindersByType(cal, spec.type); // replace any previous series
     await cal.events.insert({ calendarId: "primary", requestBody: spec.body });
     created.push(spec.type);
   }
 
   return { created };
+}
+
+const REMINDER_TYPES = ["daily", "weekly", "quarterly"] as const;
+type CalendarClient = ReturnType<typeof calendarApi>;
+
+/** Delete every lifeReset event of one type from the user's primary calendar. */
+async function deleteRemindersByType(
+  cal: CalendarClient,
+  type: string
+): Promise<number> {
+  const existing = await cal.events.list({
+    calendarId: "primary",
+    privateExtendedProperty: [`lifeReset=${type}`],
+    singleEvents: false,
+    showDeleted: false,
+    maxResults: 50,
+  });
+  let removed = 0;
+  for (const ev of existing.data.items ?? []) {
+    if (ev.id) {
+      await cal.events.delete({ calendarId: "primary", eventId: ev.id });
+      removed++;
+    }
+  }
+  return removed;
+}
+
+/** Remove all reminders this app created from the user's own calendar. */
+export async function removeReminders(
+  accessToken: string
+): Promise<{ removed: number }> {
+  const cal = calendarApi(accessToken);
+  let removed = 0;
+  for (const type of REMINDER_TYPES) {
+    removed += await deleteRemindersByType(cal, type);
+  }
+  return { removed };
+}
+
+/** How many reminder series this app currently has in the user's calendar. */
+export async function countReminders(
+  accessToken: string
+): Promise<{ synced: boolean }> {
+  const cal = calendarApi(accessToken);
+  for (const type of REMINDER_TYPES) {
+    const res = await cal.events.list({
+      calendarId: "primary",
+      privateExtendedProperty: [`lifeReset=${type}`],
+      singleEvents: false,
+      showDeleted: false,
+      maxResults: 1,
+    });
+    if ((res.data.items ?? []).length > 0) return { synced: true };
+  }
+  return { synced: false };
 }
 
 export { calendarApi };
