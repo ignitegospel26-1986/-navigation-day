@@ -69,6 +69,24 @@ export function Landing() {
           「我在逃避什麼」，是什麼時候？
         </motion.h1>
 
+        {/* Always-visible plain-language purpose statement (for users AND for
+            Google's OAuth homepage review — must clearly explain what the app
+            does and how it uses Google data). */}
+        <p className="mt-8 max-w-xl text-[15px] leading-relaxed text-ink-soft sm:text-base">
+          <strong className="text-ink">導航日 Navigation Day</strong>{" "}
+          是一個私密的長期自我覺察工具：每天兩分鐘、每週與每季各一次，
+          誠實記錄你正在靠近還是遠離你想要的生活。你寫下的每一個字，只會存在
+          <strong className="text-ink">你自己的 Google Drive</strong>——
+          我們的伺服器不儲存、也不讀取任何內容；你也可以選擇把打卡提醒
+          同步到自己的 Google 行事曆。
+        </p>
+        <p className="mt-4 max-w-xl text-[13px] leading-relaxed text-muted">
+          Navigation Day is a private journaling app for daily, weekly and
+          quarterly self-reflection. Your entries are stored only in your own
+          Google Drive (never on our servers); reminders can optionally sync to
+          your own Google Calendar.
+        </p>
+
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
