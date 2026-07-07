@@ -79,15 +79,13 @@ export async function POST(
   const tone: Tone = body.tone === "sharp" ? "sharp" : "gentle";
   const answers = body.answers ?? {};
 
-  const missing = MODULES[module]
-    .filter((q) => q.required)
-    .filter((q) => {
-      const v = answers[q.key];
-      return v === undefined || v === null || String(v).trim() === "";
-    })
-    .map((q) => q.key);
-  if (missing.length)
-    return NextResponse.json({ error: "missing_fields", missing }, { status: 400 });
+  // Only need at least one answer — no single field is mandatory.
+  const hasAny = MODULES[module].some((q) => {
+    const v = answers[q.key];
+    return v !== undefined && v !== null && String(v).trim() !== "";
+  });
+  if (!hasAny)
+    return NextResponse.json({ error: "empty" }, { status: 400 });
 
   try {
     let spreadsheetId = body.spreadsheetId;

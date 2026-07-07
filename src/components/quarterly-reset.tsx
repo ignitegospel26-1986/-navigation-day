@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ToneSwitch } from "@/components/tone-switch";
 import { QUARTERLY_QUESTIONS, prompt, type Tone } from "@/lib/prompts";
-import { jsonFetch, quarterlyPeriod } from "@/lib/client";
+import { jsonFetch, quarterlyPeriod, useConfirmSave } from "@/lib/client";
 import { IdentityCard } from "@/components/identity-card";
 
 type Answers = Record<string, string>;
@@ -33,11 +33,13 @@ export function QuarterlyReset({
   spreadsheetId: string;
   onSaved?: () => void;
 }) {
+  const [confirmSave] = useConfirmSave();
   // step 0 = intro, 1..N = questions, N+1 = identity card
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [answers, setAnswers] = useState<Answers>({});
   const [editing, setEditing] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
 
   const period = useMemo(() => quarterlyPeriod(), []);
@@ -76,13 +78,26 @@ export function QuarterlyReset({
     setStep((s) => s + delta);
   };
 
-  const canAdvance = !q || !q.required || (answers[q.key] ?? "").trim() !== "";
+  const filledCount = QUARTERLY_QUESTIONS.filter(
+    (x) => (answers[x.key] ?? "").trim() !== ""
+  ).length;
+  const emptyCount = QUARTERLY_QUESTIONS.length - filledCount;
+  const canFinish = filledCount > 0; // at least one answer
+
+  function attemptFinish() {
+    if (confirmSave && emptyCount > 0) {
+      setConfirming(true);
+      return;
+    }
+    finish();
+  }
 
   const closeAll = () => {
     setStep(0);
     setAnswers({});
     setStatus("idle");
     setEditing(false);
+    setConfirming(false);
     onClose();
   };
 
@@ -181,9 +196,9 @@ export function QuarterlyReset({
                       }
                     />
                   )}
-                  {!q.required && (
-                    <p className="mt-3 text-[13px] text-muted">可以留白，跳過也沒關係。</p>
-                  )}
+                  <p className="mt-3 text-[13px] text-muted">
+                    可以留白，跳過也沒關係。
+                  </p>
                 </div>
               )}
 
@@ -200,45 +215,71 @@ export function QuarterlyReset({
       </div>
 
       {/* footer nav (hidden on intro & card) */}
-      {step >= 1 && step <= N && (
-        <div className="flex items-center justify-between gap-4 px-6 py-6 sm:px-10">
-          <button
-            type="button"
-            onClick={() => go(-1)}
-            className="btn btn-ghost px-4 py-2.5 text-sm"
-          >
-            ← 上一題
-          </button>
-
-          {status === "error" && (
-            <span className="text-sm text-danger">寫入失敗，請再試一次。</span>
-          )}
-
-          {isLastQuestion ? (
+      {step >= 1 &&
+        step <= N &&
+        (confirming ? (
+          <div className="px-6 py-6 sm:px-10">
+            <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-ink-soft">
+                還有 {emptyCount} 題還沒填，要直接完成嗎？
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  className="btn btn-ghost px-4 py-2 text-sm"
+                >
+                  返回填寫
+                </button>
+                <button
+                  type="button"
+                  onClick={finish}
+                  disabled={status === "saving"}
+                  className="btn btn-primary px-5 py-2 text-sm disabled:opacity-50"
+                >
+                  {status === "saving" ? "寫入中⋯" : "直接完成"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-4 px-6 py-6 sm:px-10">
             <button
               type="button"
-              onClick={finish}
-              disabled={!canAdvance || status === "saving"}
-              className="btn btn-primary px-6 py-2.5 text-[15px] disabled:opacity-40"
+              onClick={() => go(-1)}
+              className="btn btn-ghost px-4 py-2.5 text-sm"
             >
-              {status === "saving"
-                ? "寫入中⋯"
-                : editing
-                  ? "更新並生成宣告卡"
-                  : "完成並生成宣告卡"}
+              ← 上一題
             </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => go(1)}
-              disabled={!canAdvance}
-              className="btn btn-primary px-6 py-2.5 text-[15px] disabled:opacity-40"
-            >
-              下一題 →
-            </button>
-          )}
-        </div>
-      )}
+
+            {status === "error" && (
+              <span className="text-sm text-danger">寫入失敗，請再試一次。</span>
+            )}
+
+            {isLastQuestion ? (
+              <button
+                type="button"
+                onClick={attemptFinish}
+                disabled={!canFinish || status === "saving"}
+                className="btn btn-primary px-6 py-2.5 text-[15px] disabled:opacity-40"
+              >
+                {status === "saving"
+                  ? "寫入中⋯"
+                  : editing
+                    ? "更新並生成宣告卡"
+                    : "完成並生成宣告卡"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => go(1)}
+                className="btn btn-primary px-6 py-2.5 text-[15px]"
+              >
+                下一題 →
+              </button>
+            )}
+          </div>
+        ))}
     </div>
   );
 }

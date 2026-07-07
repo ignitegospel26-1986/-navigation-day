@@ -33,6 +33,38 @@ export function useTone(): [Tone, (t: Tone) => void] {
   return [tone, update];
 }
 
+/* --------------------------- confirm-before-save --------------------------- */
+const CONFIRM_KEY = "lifereset:confirmsave";
+
+export function getConfirmSave(): boolean {
+  if (typeof window === "undefined") return true;
+  return window.localStorage.getItem(CONFIRM_KEY) !== "off";
+}
+
+export function useConfirmSave(): [boolean, (v: boolean) => void] {
+  const [on, setOn] = useState(true);
+
+  useEffect(() => setOn(getConfirmSave()), []);
+
+  const update = (v: boolean) => {
+    setOn(v);
+    window.localStorage.setItem(CONFIRM_KEY, v ? "on" : "off");
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: CONFIRM_KEY, newValue: v ? "on" : "off" })
+    );
+  };
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === CONFIRM_KEY) setOn(e.newValue !== "off");
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  return [on, update];
+}
+
 /* ------------------------------ period labels ------------------------------ */
 export function dailyPeriod(d = new Date()): string {
   const y = d.getFullYear();

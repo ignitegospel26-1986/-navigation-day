@@ -6,7 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { ScaleInput } from "@/components/scale-input";
 import { ToneSwitch } from "@/components/tone-switch";
 import { prompt, type ModuleKey, type Question, type Tone } from "@/lib/prompts";
-import { jsonFetch } from "@/lib/client";
+import { jsonFetch, useConfirmSave } from "@/lib/client";
 
 type Answers = Record<string, string | number>;
 
@@ -42,9 +42,11 @@ export function ModuleCheckin({
   onSaved?: () => void;
   successNote?: string;
 }) {
+  const [confirmSave] = useConfirmSave();
   const [answers, setAnswers] = useState<Answers>({});
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">(
     "idle"
   );
@@ -55,6 +57,7 @@ export function ModuleCheckin({
     let cancelled = false;
     setLoading(true);
     setStatus("idle");
+    setConfirming(false);
     jsonFetch<{ existing: { answers: Record<string, string>; tone: Tone } | null }>(
       `/api/records/${module}?period=${encodeURIComponent(period)}`
     )
@@ -94,18 +97,27 @@ export function ModuleCheckin({
   const set = (k: string, v: string | number) =>
     setAnswers((a) => ({ ...a, [k]: v }));
 
-  const canSubmit = useMemo(
+  const filledCount = useMemo(
     () =>
-      questions
-        .filter((q) => q.required)
-        .every((q) => {
-          const v = answers[q.key];
-          return v !== undefined && v !== null && String(v).trim() !== "";
-        }),
+      questions.filter((q) => {
+        const v = answers[q.key];
+        return v !== undefined && v !== null && String(v).trim() !== "";
+      }).length,
     [answers, questions]
   );
+  const emptyCount = questions.length - filledCount;
+  const canSubmit = filledCount > 0; // just need at least one answer
 
-  async function submit() {
+  function attemptSubmit() {
+    if (confirmSave && emptyCount > 0) {
+      setConfirming(true);
+      return;
+    }
+    doSubmit();
+  }
+
+  async function doSubmit() {
+    setConfirming(false);
     setStatus("saving");
     try {
       await jsonFetch(`/api/records/${module}`, {
@@ -179,7 +191,6 @@ export function ModuleCheckin({
                 <div key={q.key}>
                   <label className="mb-2 block text-[15px] font-medium leading-snug text-ink">
                     {prompt(q, tone)}
-                    {q.required && <span className="ml-1 text-accent">·</span>}
                   </label>
 
                   {q.type === "scale" ? (
@@ -216,29 +227,54 @@ export function ModuleCheckin({
               </p>
             )}
 
-            <div className="mt-7 flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn btn-ghost px-4 py-2.5 text-sm"
-              >
-                稍後
-              </button>
-              <button
-                type="button"
-                onClick={submit}
-                disabled={!canSubmit || status === "saving"}
-                className="btn btn-primary px-6 py-2.5 text-[15px] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {status === "saving"
-                  ? editing
-                    ? "更新中⋯"
-                    : "寫入中⋯"
-                  : editing
-                    ? "更新我的紀錄"
-                    : "寫入我的試算表"}
-              </button>
-            </div>
+            {confirming ? (
+              <div className="mt-6 rounded-xl border border-hairline bg-surface-2/50 p-4">
+                <p className="text-[14px] text-ink">
+                  還有 {emptyCount} 題還沒填，要直接儲存嗎？
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={doSubmit}
+                    disabled={status === "saving"}
+                    className="btn btn-primary px-5 py-2 text-sm disabled:opacity-50"
+                  >
+                    {status === "saving" ? "儲存中⋯" : "直接儲存"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirming(false)}
+                    className="btn btn-ghost px-4 py-2 text-sm"
+                  >
+                    返回填寫
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-7 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="btn btn-ghost px-4 py-2.5 text-sm"
+                >
+                  稍後
+                </button>
+                <button
+                  type="button"
+                  onClick={attemptSubmit}
+                  disabled={!canSubmit || status === "saving"}
+                  className="btn btn-primary px-6 py-2.5 text-[15px] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {status === "saving"
+                    ? editing
+                      ? "更新中⋯"
+                      : "寫入中⋯"
+                    : editing
+                      ? "更新我的紀錄"
+                      : "寫入我的試算表"}
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

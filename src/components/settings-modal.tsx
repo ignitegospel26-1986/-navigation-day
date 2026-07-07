@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { ToneSwitch } from "@/components/tone-switch";
-import { jsonFetch, dailyPeriod, useWeekStart } from "@/lib/client";
+import {
+  jsonFetch,
+  dailyPeriod,
+  useWeekStart,
+  useConfirmSave,
+} from "@/lib/client";
 import type { Tone } from "@/lib/prompts";
 import {
   DEFAULT_PREFS,
@@ -27,6 +32,7 @@ export function SettingsModal({
   onToneChange: (t: Tone) => void;
 }) {
   const [weekStart, setWeekStart] = useWeekStart();
+  const [confirmSave, setConfirmSave] = useConfirmSave();
   const [prefs, setPrefs] = useState<ReminderPrefs>(DEFAULT_PREFS);
   const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
   const [synced, setSynced] = useState<boolean | null>(null);
@@ -164,6 +170,35 @@ export function SettingsModal({
                 </button>
               );
             })}
+          </div>
+        </section>
+
+        <div className="h-px bg-hairline" />
+
+        {/* Confirm before save */}
+        <section>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h3 className="text-[15px] font-medium text-ink">儲存前先確認</h3>
+              <p className="mt-1 text-[13px] text-muted">
+                打卡時若還有題目沒填、或在紀錄處修改舊資料時，會先跳一個確認。
+                關掉可減少提示。
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setConfirmSave(!confirmSave)}
+              aria-pressed={confirmSave}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                confirmSave ? "bg-accent" : "bg-surface-2"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 h-6 w-6 rounded-full bg-paper shadow transition-transform ${
+                  confirmSave ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
           </div>
         </section>
 

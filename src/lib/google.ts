@@ -383,24 +383,48 @@ export async function syncReminders(
 
 const REMINDER_TYPES = ["daily", "weekly", "quarterly"] as const;
 type CalendarClient = ReturnType<typeof calendarApi>;
+const LOOKAHEAD_MS = 400 * 24 * 60 * 60 * 1000;
 
-/** Delete every lifeReset event of one type from the user's primary calendar. */
+/**
+ * The recurring-series master ids for one reminder type. We look at upcoming
+ * *instances* (singleEvents=true + timeMin), which reliably match a recurring
+ * series' private extended property, and map each back to its master id.
+ */
+async function masterIdsForType(
+  cal: CalendarClient,
+  type: string
+): Promise<Set<string>> {
+  const now = new Date();
+  const res = await cal.events.list({
+    calendarId: "primary",
+    privateExtendedProperty: [`lifeReset=${type}`],
+    singleEvents: true,
+    timeMin: now.toISOString(),
+    timeMax: new Date(now.getTime() + LOOKAHEAD_MS).toISOString(),
+    maxResults: 50,
+    orderBy: "startTime",
+  });
+  const ids = new Set<string>();
+  for (const ev of res.data.items ?? []) {
+    const id = ev.recurringEventId ?? ev.id;
+    if (id) ids.add(id);
+  }
+  return ids;
+}
+
+/** Delete every lifeReset series of one type from the user's primary calendar. */
 async function deleteRemindersByType(
   cal: CalendarClient,
   type: string
 ): Promise<number> {
-  const existing = await cal.events.list({
-    calendarId: "primary",
-    privateExtendedProperty: [`lifeReset=${type}`],
-    singleEvents: false,
-    showDeleted: false,
-    maxResults: 50,
-  });
+  const ids = await masterIdsForType(cal, type);
   let removed = 0;
-  for (const ev of existing.data.items ?? []) {
-    if (ev.id) {
-      await cal.events.delete({ calendarId: "primary", eventId: ev.id });
+  for (const id of ids) {
+    try {
+      await cal.events.delete({ calendarId: "primary", eventId: id });
       removed++;
+    } catch {
+      /* already gone */
     }
   }
   return removed;
@@ -418,20 +442,13 @@ export async function removeReminders(
   return { removed };
 }
 
-/** How many reminder series this app currently has in the user's calendar. */
+/** Whether this app currently has any reminder series in the user's calendar. */
 export async function countReminders(
   accessToken: string
 ): Promise<{ synced: boolean }> {
   const cal = calendarApi(accessToken);
   for (const type of REMINDER_TYPES) {
-    const res = await cal.events.list({
-      calendarId: "primary",
-      privateExtendedProperty: [`lifeReset=${type}`],
-      singleEvents: false,
-      showDeleted: false,
-      maxResults: 1,
-    });
-    if ((res.data.items ?? []).length > 0) return { synced: true };
+    if ((await masterIdsForType(cal, type)).size > 0) return { synced: true };
   }
   return { synced: false };
 }

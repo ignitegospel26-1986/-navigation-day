@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Brand } from "@/components/brand";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Modal } from "@/components/ui/modal";
-import { MODULES, ModuleKey, prompt } from "@/lib/prompts";
+import { ScaleInput } from "@/components/scale-input";
+import { MODULES, ModuleKey, prompt, type Tone } from "@/lib/prompts";
 import { parseRow } from "@/lib/schema";
-import { jsonFetch, useWeekStart, dailyPeriod } from "@/lib/client";
+import {
+  jsonFetch,
+  useWeekStart,
+  dailyPeriod,
+  useConfirmSave,
+} from "@/lib/client";
 
 type Rows = string[][];
 type Axis = "entry" | "question";
@@ -37,6 +43,13 @@ export function History() {
   useEffect(() => {
     setQuestionKey(MODULES[mode][0].key);
   }, [mode]);
+
+  // Re-fetch one module's rows (used after an in-place edit).
+  const loadModule = useCallback((m: ModuleKey) => {
+    jsonFetch<{ rows: Rows }>(`/api/records/${m}`)
+      .then((d) => setRows((prev) => ({ ...prev, [m]: d.rows ?? [] })))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     Promise.all(
@@ -161,7 +174,11 @@ export function History() {
         )}
       </main>
 
-      <DetailModal detail={detail} onClose={() => setDetail(null)} />
+      <DetailModal
+        detail={detail}
+        onClose={() => setDetail(null)}
+        onSaved={loadModule}
+      />
     </div>
   );
 }
@@ -411,12 +428,85 @@ function QuestionTimeline({
 function DetailModal({
   detail,
   onClose,
+  onSaved,
 }: {
   detail: Detail | null;
   onClose: () => void;
+  onSaved: (m: ModuleKey) => void;
 }) {
   const open = detail !== null;
-  const parsed = detail?.values ? parseRow(detail.module, detail.values) : null;
+  const [confirmSave] = useConfirmSave();
+  const [mode, setMode] = useState<"view" | "edit">("view");
+  const [answers, setAnswers] = useState<Record<string, string | number>>({});
+  const [tone, setTone] = useState<Tone>("gentle");
+  const [saving, setSaving] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!detail) return;
+    if (detail.values) {
+      const parsed = parseRow(detail.module, detail.values);
+      const a: Record<string, string | number> = {};
+      for (const q of MODULES[detail.module]) {
+        const raw = parsed.answers[q.key] ?? "";
+        if (q.type === "scale") {
+          if (raw !== "") a[q.key] = Number(raw);
+        } else {
+          a[q.key] = raw;
+        }
+      }
+      setAnswers(a);
+      setTone(parsed.tone);
+    } else {
+      setAnswers({});
+      setTone("gentle");
+    }
+    setMode("view");
+    setConfirming(false);
+    setErr(null);
+    setSaving(false);
+  }, [detail]);
+
+  const module = detail?.module ?? "daily";
+  const questions = MODULES[module];
+  const set = (k: string, v: string | number) =>
+    setAnswers((a) => ({ ...a, [k]: v }));
+  const emptyCount = questions.filter(
+    (q) => String(answers[q.key] ?? "").trim() === ""
+  ).length;
+  const hasAny = emptyCount < questions.length;
+
+  async function doSave() {
+    if (!detail) return;
+    setConfirming(false);
+    setSaving(true);
+    setErr(null);
+    try {
+      await jsonFetch(`/api/records/${detail.module}`, {
+        method: "POST",
+        body: JSON.stringify({ period: detail.period, tone, answers }),
+      });
+      onSaved(detail.module);
+      onClose();
+    } catch {
+      setErr("儲存失敗，請再試一次。");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function attemptSave() {
+    if (!hasAny) {
+      setErr("至少填一題才能儲存。");
+      return;
+    }
+    if (confirmSave) {
+      setConfirming(true);
+      return;
+    }
+    doSave();
+  }
 
   return (
     <Modal open={open} onClose={onClose} labelledBy="detail-title">
@@ -425,32 +515,52 @@ function DetailModal({
           <h2 id="detail-title" className="font-serif text-2xl text-ink">
             {detail ? periodLabel(detail.module, detail.period) : ""}
           </h2>
-          {parsed && (
+          {detail?.values && mode === "view" && (
             <span className="mt-2 inline-block rounded-full border border-hairline px-2 py-0.5 text-[11px] text-muted">
-              當時語氣：{parsed.tone === "sharp" ? "犀利" : "溫柔"}
+              當時語氣：{tone === "sharp" ? "犀利" : "溫柔"}
             </span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="關閉"
-          className="btn btn-ghost h-8 w-8 !p-0 text-lg text-ink-soft"
-        >
-          ✕
-        </button>
+        <div className="flex items-center gap-2">
+          {detail?.values && mode === "view" && (
+            <button
+              type="button"
+              onClick={() => setMode("edit")}
+              className="btn btn-ghost px-3 py-1.5 text-sm"
+            >
+              編輯
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="關閉"
+            className="btn btn-ghost h-8 w-8 !p-0 text-lg text-ink-soft"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
-      {!detail?.values || !parsed ? (
-        <p className="py-10 text-center text-sm text-muted">這一天還沒有紀錄。</p>
-      ) : (
+      {mode === "view" && !detail?.values ? (
+        <div className="py-8 text-center">
+          <p className="text-sm text-muted">這裡還沒有紀錄。</p>
+          <button
+            type="button"
+            onClick={() => setMode("edit")}
+            className="btn btn-primary mt-4 px-5 py-2 text-sm"
+          >
+            補一筆這天的紀錄
+          </button>
+        </div>
+      ) : mode === "view" ? (
         <div className="max-h-[62vh] space-y-5 overflow-y-auto pr-2">
-          {MODULES[detail.module].map((q) => {
-            const ans = (parsed.answers[q.key] ?? "").trim();
+          {questions.map((q) => {
+            const ans = String(answers[q.key] ?? "").trim();
             return (
               <div key={q.key}>
                 <p className="text-[13px] leading-snug text-muted">
-                  {prompt(q, parsed.tone)}
+                  {prompt(q, tone)}
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
                   {ans || "—"}
@@ -459,6 +569,86 @@ function DetailModal({
             );
           })}
         </div>
+      ) : (
+        <>
+          <div className="max-h-[56vh] space-y-5 overflow-y-auto pr-2">
+            {questions.map((q) => (
+              <div key={q.key}>
+                <label className="mb-2 block text-[14px] font-medium leading-snug text-ink">
+                  {prompt(q, tone)}
+                </label>
+                {q.type === "scale" ? (
+                  <ScaleInput
+                    min={q.min!}
+                    max={q.max!}
+                    value={(answers[q.key] as number) ?? null}
+                    onChange={(v) => set(q.key, v)}
+                    minLabel={q.minLabel}
+                    maxLabel={q.maxLabel}
+                  />
+                ) : q.type === "longtext" ? (
+                  <textarea
+                    className="field min-h-[72px] resize-y px-3.5 py-2.5 text-[15px] leading-relaxed"
+                    value={(answers[q.key] as string) ?? ""}
+                    onChange={(e) => set(q.key, e.target.value)}
+                  />
+                ) : (
+                  <input
+                    className="field px-3.5 py-2.5 text-[15px]"
+                    value={(answers[q.key] as string) ?? ""}
+                    onChange={(e) => set(q.key, e.target.value)}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {err && <p className="mt-3 text-sm text-danger">{err}</p>}
+
+          {confirming ? (
+            <div className="mt-5 rounded-xl border border-hairline bg-surface-2/50 p-4">
+              <p className="text-[14px] text-ink">
+                確定要儲存這筆紀錄嗎？
+                {emptyCount > 0 ? `（還有 ${emptyCount} 題空白）` : ""}
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={doSave}
+                  disabled={saving}
+                  className="btn btn-primary px-5 py-2 text-sm disabled:opacity-50"
+                >
+                  {saving ? "儲存中⋯" : "確定儲存"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  className="btn btn-ghost px-4 py-2 text-sm"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => (detail?.values ? setMode("view") : onClose())}
+                className="btn btn-ghost px-4 py-2 text-sm"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={attemptSave}
+                disabled={saving || !hasAny}
+                className="btn btn-primary px-5 py-2 text-sm disabled:opacity-40"
+              >
+                {saving ? "儲存中⋯" : "儲存修改"}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </Modal>
   );

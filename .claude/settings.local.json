@@ -30,7 +30,20 @@
       "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; $env:NEXT_TELEMETRY_DISABLED = \"1\"; $env:AUTH_SECRET = \"build-time-dummy-secret-0000000000000000\"; $env:GOOGLE_CLIENT_ID = \"dummy.apps.googleusercontent.com\"; $env:GOOGLE_CLIENT_SECRET = \"dummy\"; npm run build 2>&1 | Select-String -Pattern \"Compiled|Failed|error|✓ Generating\" | Select-Object -First 8)",
       "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; $env:NEXT_TELEMETRY_DISABLED = \"1\"; $env:AUTH_SECRET = \"build-time-dummy-secret-0000000000000000\"; $env:GOOGLE_CLIENT_ID = \"dummy.apps.googleusercontent.com\"; $env:GOOGLE_CLIENT_SECRET = \"dummy\"; npm run build 2>&1 | Select-String -Pattern \"Compiled|Failed|error|✓ Generating|standalone\" | Select-Object -First 8; \"--- standalone server.js? ---\"; Test-Path \".next\\\\standalone\\\\server.js\")",
       "PowerShell($p = \"C:\\\\Users\\\\vup\\\\OneDrive\\\\Desktop\\\\C_AI\\\\24小時人生重啟系統\"; @\\(\"package-lock.json\",\"Dockerfile\",\".dockerignore\",\".npmrc\",\"DEPLOY.md\",\"next.config.ts\",\"src\\\\app\\\\api\\\\health\\\\route.ts\"\\) | ForEach-Object { \"{0,-40} {1}\" -f $_, \\(Test-Path \\(Join-Path $p $_\\)\\) })",
-      "PowerShell($g = Get-Command git -ErrorAction SilentlyContinue; if \\($g\\) { \"git 已安裝：\" + \\(git --version\\) } else { \"git 尚未安裝\" })"
+      "PowerShell($g = Get-Command git -ErrorAction SilentlyContinue; if \\($g\\) { \"git 已安裝：\" + \\(git --version\\) } else { \"git 尚未安裝\" })",
+      "PowerShell(\"--- ?? remote ---\")",
+      "PowerShell(\"--- ??????? ---\")",
+      "PowerShell(\"--- ?? commit ---\")",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npx tsc --noEmit 2>&1 | Select-Object -First 20; \"TSC EXIT: $LASTEXITCODE\")",
+      "PowerShell(git add src/auth.ts src/components/privacy-content.tsx scripts/gen-logo.mjs)",
+      "PowerShell(git push origin main 2>&1)",
+      "PowerShell(\"--- push ---\")",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npx tsc --noEmit 2>&1 | Select-Object -First 15; \"TSC EXIT: $LASTEXITCODE\")",
+      "PowerShell(git add src/components/landing.tsx)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; $env:NEXT_TELEMETRY_DISABLED = \"1\"; $env:AUTH_SECRET = \"x\"; $env:GOOGLE_CLIENT_ID = \"x\"; $env:GOOGLE_CLIENT_SECRET = \"x\"; npm run build 2>&1 | Select-String -Pattern \"Compiled|Failed|error|✓ Generating|/api/calendar\" | Select-Object -First 8)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; $env:NEXT_TELEMETRY_DISABLED = \"1\"; $env:AUTH_SECRET = \"x\"; $env:GOOGLE_CLIENT_ID = \"x\"; $env:GOOGLE_CLIENT_SECRET = \"x\"; npm run build 2>&1 | Select-String -Pattern \"Compiled|Failed|Error:|✓ Generating\" | Select-Object -First 8)",
+      "PowerShell(git add -A)",
+      "PowerShell(git commit -m \"Records: at-least-one-field save, save confirmation, editable history; fix calendar sync detection\" -m \"Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\")"
     ]
   }
 }
