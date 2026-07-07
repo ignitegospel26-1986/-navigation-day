@@ -188,14 +188,15 @@ export function SettingsModal({
             <button
               type="button"
               onClick={() => setConfirmSave(!confirmSave)}
-              aria-pressed={confirmSave}
-              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+              role="switch"
+              aria-checked={confirmSave}
+              className={`inline-flex h-7 w-12 shrink-0 items-center rounded-full p-0.5 transition-colors ${
                 confirmSave ? "bg-accent" : "bg-surface-2"
               }`}
             >
               <span
-                className={`absolute top-0.5 h-6 w-6 rounded-full bg-paper shadow transition-transform ${
-                  confirmSave ? "translate-x-5" : "translate-x-0.5"
+                className={`h-6 w-6 rounded-full bg-paper shadow transition-transform ${
+                  confirmSave ? "translate-x-5" : "translate-x-0"
                 }`}
               />
             </button>
@@ -240,14 +241,15 @@ export function SettingsModal({
               type="button"
               onClick={toggleBrowser}
               disabled={perm === "unsupported"}
-              aria-pressed={prefs.browserEnabled}
-              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+              role="switch"
+              aria-checked={prefs.browserEnabled}
+              className={`inline-flex h-7 w-12 shrink-0 items-center rounded-full p-0.5 transition-colors ${
                 prefs.browserEnabled ? "bg-accent" : "bg-surface-2"
               } disabled:opacity-40`}
             >
               <span
-                className={`absolute top-0.5 h-6 w-6 rounded-full bg-paper shadow transition-transform ${
-                  prefs.browserEnabled ? "translate-x-5" : "translate-x-0.5"
+                className={`h-6 w-6 rounded-full bg-paper shadow transition-transform ${
+                  prefs.browserEnabled ? "translate-x-5" : "translate-x-0"
                 }`}
               />
             </button>
