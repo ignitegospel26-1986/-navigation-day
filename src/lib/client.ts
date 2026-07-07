@@ -128,6 +128,14 @@ export function quarterlyPeriod(d = new Date()): string {
   return `${d.getFullYear()}-Q${q}`;
 }
 
+/** Whole days from today until the last day of the current quarter (inclusive). */
+export function daysLeftInQuarter(d = new Date()): number {
+  const endMonth = Math.floor(d.getMonth() / 3) * 3 + 2; // last month of the quarter
+  const end = new Date(d.getFullYear(), endMonth + 1, 0); // last day of that month
+  const today = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.max(0, Math.round((end.getTime() - today.getTime()) / 86400000));
+}
+
 /* -------------------------------- fetch json ------------------------------- */
 export async function jsonFetch<T = unknown>(
   input: string,

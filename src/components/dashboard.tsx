@@ -19,8 +19,13 @@ import {
   dailyPeriod,
   weeklyPeriod,
   quarterlyPeriod,
+  daysLeftInQuarter,
 } from "@/lib/client";
-import { getReminderPrefs, startLocalReminders } from "@/lib/reminders";
+import {
+  DEFAULT_PREFS,
+  getReminderPrefs,
+  startLocalReminders,
+} from "@/lib/reminders";
 
 type Filled = { daily?: boolean; weekly?: boolean; quarterly?: boolean };
 
@@ -52,8 +57,18 @@ export function Dashboard({ name }: { name?: string | null }) {
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<Active>(null);
   const [prefsVersion, setPrefsVersion] = useState(0);
+  const [reminderTimes, setReminderTimes] = useState({
+    daily: DEFAULT_PREFS.dailyTime,
+    weekly: DEFAULT_PREFS.weeklyTime,
+  });
 
   const weekPeriod = weeklyPeriod(weekStart);
+
+  // Reflect the user's configured reminder times on the cards (display only).
+  useEffect(() => {
+    const p = getReminderPrefs();
+    setReminderTimes({ daily: p.dailyTime, weekly: p.weeklyTime });
+  }, [prefsVersion]);
 
   useEffect(() => {
     jsonFetch<SpaceResponse>("/api/space")
@@ -150,6 +165,9 @@ export function Dashboard({ name }: { name?: string | null }) {
             setTone={setTone}
             repaired={repaired}
             filled={filled}
+            dailyTime={reminderTimes.daily}
+            weeklyTime={reminderTimes.weekly}
+            weekStart={weekStart}
             onOpen={setActive}
             error={error}
           />
@@ -326,6 +344,9 @@ function Console({
   setTone,
   repaired,
   filled,
+  dailyTime,
+  weeklyTime,
+  weekStart,
   onOpen,
   error,
 }: {
@@ -334,12 +355,20 @@ function Console({
   setTone: (t: "gentle" | "sharp") => void;
   repaired: string[];
   filled: Filled;
+  dailyTime: string;
+  weeklyTime: string;
+  weekStart: "sun" | "mon";
   onOpen: (a: Active) => void;
   error: string | null;
 }) {
   const hour = new Date().getHours();
   const greet =
     hour < 5 ? "夜深了" : hour < 11 ? "早安" : hour < 18 ? "午安" : "晚安";
+
+  // Week ends on the day before its start day; suggest reviewing then.
+  const weeklyDay = weekStart === "mon" ? "週日" : "週六";
+  const weeklyHint = `建議${weeklyDay} ${weeklyTime}`;
+  const quarterlyHint = `這一季還剩 ${daysLeftInQuarter()} 天`;
 
   return (
     <div>
@@ -406,21 +435,26 @@ function Console({
             <p className="mt-2 text-[13px] text-accent">✓ 今天已填，點擊可修改</p>
           )}
         </div>
-        <span className="shrink-0 text-2xl text-accent">→</span>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span className="text-[12px] tabular-nums text-muted">
+            每天 {dailyTime}
+          </span>
+          <span className="text-2xl text-accent">→</span>
+        </div>
       </motion.button>
 
       {/* Weekly + Quarterly */}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <ModuleCard
           title="每週整理"
-          hint="建議週日晚上"
+          hint={weeklyHint}
           desc="命名這一週真正主導你的內在模式。"
           done={!!filled.weekly}
           onClick={() => onOpen("weekly")}
         />
         <ModuleCard
           title="季度深度重啟"
-          hint="沉浸式一步一題"
+          hint={quarterlyHint}
           desc="九題引導，最後生成你的身分宣告卡。"
           done={!!filled.quarterly}
           onClick={() => onOpen("quarterly")}
