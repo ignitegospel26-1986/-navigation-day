@@ -286,10 +286,13 @@ export async function readModule(
 export interface ReminderOptions {
   startDate: string; // YYYY-MM-DD in the user's timezone
   dailyTime: string; // "HH:MM"
+  weeklyDay: number; // 0=Sun .. 6=Sat
   weeklyTime: string;
   quarterlyTime: string;
   timeZone: string;
 }
+
+const RRULE_DAY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 
 const addMinutes = (hhmm: string, mins: number): string => {
   const [h, m] = hhmm.split(":").map(Number);
@@ -346,7 +349,9 @@ export async function syncReminders(
           dateTime: `${startDate}T${addMinutes(opts.weeklyTime, 20)}:00`,
           timeZone,
         },
-        recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=SU"],
+        recurrence: [
+          `RRULE:FREQ=WEEKLY;BYDAY=${RRULE_DAY[opts.weeklyDay] ?? "SU"}`,
+        ],
         reminders: {
           useDefault: false,
           overrides: [{ method: "popup", minutes: 0 }],

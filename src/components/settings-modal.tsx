@@ -12,6 +12,7 @@ import {
 import type { Tone } from "@/lib/prompts";
 import {
   DEFAULT_PREFS,
+  WEEKDAY_LABELS,
   getReminderPrefs,
   registerServiceWorker,
   requestNotificationPermission,
@@ -84,6 +85,7 @@ export function SettingsModal({
         body: JSON.stringify({
           startDate: dailyPeriod(),
           dailyTime: prefs.dailyTime,
+          weeklyDay: prefs.weeklyDay,
           weeklyTime: prefs.weeklyTime,
           quarterlyTime: prefs.quarterlyTime,
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -211,17 +213,37 @@ export function SettingsModal({
           <p className="mb-3 mt-1 text-[13px] text-muted">
             自訂你想被提醒的時間，下面兩種提醒方式共用。
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-3">
             <TimeField
               label="每日（平日）"
               value={prefs.dailyTime}
               onChange={(v) => update({ dailyTime: v })}
             />
-            <TimeField
-              label="每週（週日）"
-              value={prefs.weeklyTime}
-              onChange={(v) => update({ weeklyTime: v })}
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="mb-1.5 block text-[13px] text-ink-soft">
+                  每週提醒日
+                </span>
+                <select
+                  value={prefs.weeklyDay}
+                  onChange={(e) =>
+                    update({ weeklyDay: Number(e.target.value) })
+                  }
+                  className="field px-3 py-2 text-[15px]"
+                >
+                  {WEEKDAY_LABELS.map((label, i) => (
+                    <option key={i} value={i}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <TimeField
+                label="每週時間"
+                value={prefs.weeklyTime}
+                onChange={(v) => update({ weeklyTime: v })}
+              />
+            </div>
           </div>
         </section>
 
@@ -293,7 +315,10 @@ export function SettingsModal({
               </p>
               <ul className="mt-2 space-y-1 text-[13px] text-ink-soft">
                 <li>· 平日每天 {prefs.dailyTime}：每日打卡</li>
-                <li>· 每週日 {prefs.weeklyTime}：每週整理</li>
+                <li>
+                  · 每{WEEKDAY_LABELS[prefs.weeklyDay]} {prefs.weeklyTime}
+                  ：每週整理
+                </li>
                 <li>· 每季一次：季度深度重啟（整天）</li>
               </ul>
               <p className="mt-2 text-[12px] text-muted">

@@ -3,15 +3,28 @@
 export interface ReminderPrefs {
   browserEnabled: boolean;
   dailyTime: string; // "HH:MM", fired on weekdays
-  weeklyTime: string; // "HH:MM", fired on Sunday
+  weeklyDay: number; // 0=Sun .. 6=Sat — which day the weekly reminder fires
+  weeklyTime: string; // "HH:MM"
   quarterlyTime: string; // used for calendar sync only
 }
 
 const KEY = "lifereset:reminders";
 
+/** 0=Sun .. 6=Sat */
+export const WEEKDAY_LABELS = [
+  "週日",
+  "週一",
+  "週二",
+  "週三",
+  "週四",
+  "週五",
+  "週六",
+];
+
 export const DEFAULT_PREFS: ReminderPrefs = {
   browserEnabled: false,
   dailyTime: "21:00",
+  weeklyDay: 0, // Sunday by default
   weeklyTime: "20:00",
   quarterlyTime: "10:00",
 };
@@ -71,15 +84,15 @@ function nextWeekday(time: string, now = new Date()): Date {
   return d;
 }
 
-function nextSunday(time: string, now = new Date()): Date {
+function nextOnDay(time: string, day: number, now = new Date()): Date {
   const [h, m] = parse(time);
   const d = new Date(now);
   d.setSeconds(0, 0);
   d.setHours(h, m, 0, 0);
-  if (d.getDay() === 0 && d > now) return d;
+  if (d.getDay() === day && d > now) return d;
   do {
     d.setDate(d.getDate() + 1);
-  } while (d.getDay() !== 0);
+  } while (d.getDay() !== day);
   return d;
 }
 
@@ -120,10 +133,10 @@ export function startLocalReminders(prefs: ReminderPrefs): () => void {
     () => nextWeekday(prefs.dailyTime)
   );
   schedule(
-    nextSunday(prefs.weeklyTime),
+    nextOnDay(prefs.weeklyTime, prefs.weeklyDay),
     "導航日・每週整理",
-    "週日的深呼吸，回顧這一週。",
-    () => nextSunday(prefs.weeklyTime)
+    "深呼吸，回顧這一週。",
+    () => nextOnDay(prefs.weeklyTime, prefs.weeklyDay)
   );
 
   return () => timers.forEach(clearTimeout);

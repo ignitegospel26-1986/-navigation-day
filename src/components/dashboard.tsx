@@ -23,6 +23,7 @@ import {
 } from "@/lib/client";
 import {
   DEFAULT_PREFS,
+  WEEKDAY_LABELS,
   getReminderPrefs,
   startLocalReminders,
 } from "@/lib/reminders";
@@ -60,6 +61,7 @@ export function Dashboard({ name }: { name?: string | null }) {
   const [reminderTimes, setReminderTimes] = useState({
     daily: DEFAULT_PREFS.dailyTime,
     weekly: DEFAULT_PREFS.weeklyTime,
+    weeklyDay: DEFAULT_PREFS.weeklyDay,
   });
 
   const weekPeriod = weeklyPeriod(weekStart);
@@ -67,7 +69,11 @@ export function Dashboard({ name }: { name?: string | null }) {
   // Reflect the user's configured reminder times on the cards (display only).
   useEffect(() => {
     const p = getReminderPrefs();
-    setReminderTimes({ daily: p.dailyTime, weekly: p.weeklyTime });
+    setReminderTimes({
+      daily: p.dailyTime,
+      weekly: p.weeklyTime,
+      weeklyDay: p.weeklyDay,
+    });
   }, [prefsVersion]);
 
   useEffect(() => {
@@ -167,7 +173,7 @@ export function Dashboard({ name }: { name?: string | null }) {
             filled={filled}
             dailyTime={reminderTimes.daily}
             weeklyTime={reminderTimes.weekly}
-            weekStart={weekStart}
+            weeklyDay={reminderTimes.weeklyDay}
             onOpen={setActive}
             error={error}
           />
@@ -346,7 +352,7 @@ function Console({
   filled,
   dailyTime,
   weeklyTime,
-  weekStart,
+  weeklyDay,
   onOpen,
   error,
 }: {
@@ -357,7 +363,7 @@ function Console({
   filled: Filled;
   dailyTime: string;
   weeklyTime: string;
-  weekStart: "sun" | "mon";
+  weeklyDay: number;
   onOpen: (a: Active) => void;
   error: string | null;
 }) {
@@ -365,9 +371,7 @@ function Console({
   const greet =
     hour < 5 ? "夜深了" : hour < 11 ? "早安" : hour < 18 ? "午安" : "晚安";
 
-  // Week ends on the day before its start day; suggest reviewing then.
-  const weeklyDay = weekStart === "mon" ? "週日" : "週六";
-  const weeklyHint = `建議${weeklyDay} ${weeklyTime}`;
+  const weeklyHint = `每${WEEKDAY_LABELS[weeklyDay] ?? "週日"} ${weeklyTime}`;
   const quarterlyHint = `這一季還剩 ${daysLeftInQuarter()} 天`;
 
   return (

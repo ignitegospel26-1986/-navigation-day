@@ -48,9 +48,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "bad_json" }, { status: 400 });
   }
 
+  const weeklyDay =
+    typeof body.weeklyDay === "number" &&
+    body.weeklyDay >= 0 &&
+    body.weeklyDay <= 6
+      ? Math.floor(body.weeklyDay)
+      : 0;
+
   const opts: ReminderOptions = {
     startDate: body.startDate ?? "",
     dailyTime: body.dailyTime ?? "21:00",
+    weeklyDay,
     weeklyTime: body.weeklyTime ?? "20:00",
     quarterlyTime: body.quarterlyTime ?? "10:00",
     timeZone: body.timeZone || "Asia/Taipei",
