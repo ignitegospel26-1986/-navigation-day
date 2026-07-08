@@ -40,6 +40,9 @@ export function SettingsModal({
   const [calStep, setCalStep] = useState<"idle" | "confirm">("idle");
   const [calBusy, setCalBusy] = useState(false);
   const [calMsg, setCalMsg] = useState<string | null>(null);
+  const [syncScope, setSyncScope] = useState<
+    "all" | "daily" | "weekly" | "quarterly"
+  >("all");
 
   useEffect(() => {
     if (!open) return;
@@ -84,9 +87,12 @@ export function SettingsModal({
         method: "POST",
         body: JSON.stringify({
           startDate: dailyPeriod(),
+          which: syncScope,
+          dailyWeekdaysOnly: prefs.dailyWeekdaysOnly,
           dailyTime: prefs.dailyTime,
           weeklyDay: prefs.weeklyDay,
           weeklyTime: prefs.weeklyTime,
+          quarterlyDay: prefs.quarterlyDay,
           quarterlyTime: prefs.quarterlyTime,
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         }),
@@ -114,6 +120,25 @@ export function SettingsModal({
       setCalBusy(false);
     }
   }
+
+  const scopeItems = [
+    {
+      key: "daily",
+      text: `${prefs.dailyWeekdaysOnly ? "平日" : "每天"} ${prefs.dailyTime}：每日打卡`,
+    },
+    {
+      key: "weekly",
+      text: `每${WEEKDAY_LABELS[prefs.weeklyDay]} ${prefs.weeklyTime}：每週整理`,
+    },
+    {
+      key: "quarterly",
+      text: `每年 1/4/7/10 月第 ${prefs.quarterlyDay} 天：季度深度重啟（整天）`,
+    },
+  ];
+  const shownItems =
+    syncScope === "all"
+      ? scopeItems
+      : scopeItems.filter((i) => i.key === syncScope);
 
   return (
     <Modal open={open} onClose={onClose} labelledBy="settings-title">
@@ -213,12 +238,47 @@ export function SettingsModal({
           <p className="mb-3 mt-1 text-[13px] text-muted">
             自訂你想被提醒的時間，下面兩種提醒方式共用。
           </p>
-          <div className="space-y-3">
-            <TimeField
-              label="每日（平日）"
-              value={prefs.dailyTime}
-              onChange={(v) => update({ dailyTime: v })}
-            />
+          <div className="space-y-4">
+            {/* daily: weekdays vs everyday + time */}
+            <div>
+              <span className="mb-1.5 block text-[13px] text-ink-soft">每日</span>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="inline-flex rounded-full border border-hairline bg-surface-2/60 p-0.5">
+                  {(
+                    [
+                      [true, "只平日"],
+                      [false, "每天"],
+                    ] as const
+                  ).map(([v, label]) => {
+                    const active = prefs.dailyWeekdaysOnly === v;
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => update({ dailyWeekdaysOnly: v })}
+                        className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                          active
+                            ? "bg-accent text-[#fbf7ee] dark:text-[#16130f]"
+                            : "text-ink-soft hover:text-ink"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="w-28">
+                  <input
+                    type="time"
+                    value={prefs.dailyTime}
+                    onChange={(e) => update({ dailyTime: e.target.value })}
+                    className="field px-3 py-2 text-[15px]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* weekly: day + time */}
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
                 <span className="mb-1.5 block text-[13px] text-ink-soft">
@@ -243,6 +303,34 @@ export function SettingsModal({
                 value={prefs.weeklyTime}
                 onChange={(v) => update({ weeklyTime: v })}
               />
+            </div>
+
+            {/* quarterly: day of month */}
+            <div>
+              <span className="mb-1.5 block text-[13px] text-ink-soft">
+                每季提醒日
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] text-muted">每年 1/4/7/10 月的第</span>
+                <div className="w-16">
+                  <input
+                    type="number"
+                    min={1}
+                    max={28}
+                    value={prefs.quarterlyDay}
+                    onChange={(e) =>
+                      update({
+                        quarterlyDay: Math.min(
+                          28,
+                          Math.max(1, Number(e.target.value) || 1)
+                        ),
+                      })
+                    }
+                    className="field px-3 py-2 text-center text-[15px]"
+                  />
+                </div>
+                <span className="text-[13px] text-muted">天（整天）</span>
+              </div>
             </div>
           </div>
         </section>
@@ -310,19 +398,35 @@ export function SettingsModal({
 
           {calStep === "confirm" ? (
             <div className="mt-3 rounded-xl border border-hairline bg-surface-2/50 p-4">
-              <p className="text-[13px] font-medium text-ink">
-                即將在你的 Google 行事曆建立這些循環提醒：
-              </p>
-              <ul className="mt-2 space-y-1 text-[13px] text-ink-soft">
-                <li>· 平日每天 {prefs.dailyTime}：每日打卡</li>
-                <li>
-                  · 每{WEEKDAY_LABELS[prefs.weeklyDay]} {prefs.weeklyTime}
-                  ：每週整理
-                </li>
-                <li>· 每季一次：季度深度重啟（整天）</li>
+              <div className="mb-2.5 flex items-center gap-2">
+                <span className="text-[13px] font-medium text-ink">同步範圍</span>
+                <select
+                  value={syncScope}
+                  onChange={(e) =>
+                    setSyncScope(
+                      e.target.value as
+                        | "all"
+                        | "daily"
+                        | "weekly"
+                        | "quarterly"
+                    )
+                  }
+                  className="rounded-lg border border-hairline bg-paper px-2.5 py-1 text-[13px] text-ink"
+                >
+                  <option value="all">全部</option>
+                  <option value="daily">只每日</option>
+                  <option value="weekly">只每週</option>
+                  <option value="quarterly">只季度</option>
+                </select>
+              </div>
+              <p className="text-[13px] text-ink-soft">即將建立：</p>
+              <ul className="mt-1.5 space-y-1 text-[13px] text-ink-soft">
+                {shownItems.map((i) => (
+                  <li key={i.key}>· {i.text}</li>
+                ))}
               </ul>
               <p className="mt-2 text-[12px] text-muted">
-                重複同步會取代舊的，不會重複建立。要改時間，先到上方「提醒時段」調整。
+                重複同步會取代舊的，不會重複建立。要改日子/時間，先到上方「提醒時段」調整。
               </p>
               <div className="mt-3 flex gap-2">
                 <button

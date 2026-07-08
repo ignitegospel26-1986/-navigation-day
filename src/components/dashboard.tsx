@@ -60,6 +60,7 @@ export function Dashboard({ name }: { name?: string | null }) {
   const [prefsVersion, setPrefsVersion] = useState(0);
   const [reminderTimes, setReminderTimes] = useState({
     daily: DEFAULT_PREFS.dailyTime,
+    dailyWeekdaysOnly: DEFAULT_PREFS.dailyWeekdaysOnly,
     weekly: DEFAULT_PREFS.weeklyTime,
     weeklyDay: DEFAULT_PREFS.weeklyDay,
   });
@@ -71,6 +72,7 @@ export function Dashboard({ name }: { name?: string | null }) {
     const p = getReminderPrefs();
     setReminderTimes({
       daily: p.dailyTime,
+      dailyWeekdaysOnly: p.dailyWeekdaysOnly,
       weekly: p.weeklyTime,
       weeklyDay: p.weeklyDay,
     });
@@ -172,6 +174,7 @@ export function Dashboard({ name }: { name?: string | null }) {
             repaired={repaired}
             filled={filled}
             dailyTime={reminderTimes.daily}
+            dailyWeekdaysOnly={reminderTimes.dailyWeekdaysOnly}
             weeklyTime={reminderTimes.weekly}
             weeklyDay={reminderTimes.weeklyDay}
             onOpen={setActive}
@@ -351,6 +354,7 @@ function Console({
   repaired,
   filled,
   dailyTime,
+  dailyWeekdaysOnly,
   weeklyTime,
   weeklyDay,
   onOpen,
@@ -362,6 +366,7 @@ function Console({
   repaired: string[];
   filled: Filled;
   dailyTime: string;
+  dailyWeekdaysOnly: boolean;
   weeklyTime: string;
   weeklyDay: number;
   onOpen: (a: Active) => void;
@@ -441,7 +446,7 @@ function Console({
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
           <span className="text-[12px] tabular-nums text-muted">
-            每天 {dailyTime}
+            {dailyWeekdaysOnly ? "平日" : "每天"} {dailyTime}
           </span>
           <span className="text-2xl text-accent">→</span>
         </div>

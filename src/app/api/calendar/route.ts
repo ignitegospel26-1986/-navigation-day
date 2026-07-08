@@ -5,6 +5,7 @@ import {
   removeReminders,
   syncReminders,
   type ReminderOptions,
+  type SyncScope,
 } from "@/lib/google";
 
 const TIME = /^\d{2}:\d{2}$/;
@@ -41,25 +42,29 @@ export async function POST(req: Request) {
   const token = await requireToken();
   if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  let body: Partial<ReminderOptions>;
+  let body: Partial<ReminderOptions> & { which?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "bad_json" }, { status: 400 });
   }
 
-  const weeklyDay =
-    typeof body.weeklyDay === "number" &&
-    body.weeklyDay >= 0 &&
-    body.weeklyDay <= 6
-      ? Math.floor(body.weeklyDay)
-      : 0;
+  const clampInt = (v: unknown, lo: number, hi: number, dflt: number) =>
+    typeof v === "number" && v >= lo && v <= hi ? Math.floor(v) : dflt;
+
+  const which: SyncScope = (["daily", "weekly", "quarterly"] as const).includes(
+    body.which as never
+  )
+    ? (body.which as SyncScope)
+    : "all";
 
   const opts: ReminderOptions = {
     startDate: body.startDate ?? "",
+    dailyWeekdaysOnly: body.dailyWeekdaysOnly !== false, // default true
     dailyTime: body.dailyTime ?? "21:00",
-    weeklyDay,
+    weeklyDay: clampInt(body.weeklyDay, 0, 6, 0),
     weeklyTime: body.weeklyTime ?? "20:00",
+    quarterlyDay: clampInt(body.quarterlyDay, 1, 28, 1),
     quarterlyTime: body.quarterlyTime ?? "10:00",
     timeZone: body.timeZone || "Asia/Taipei",
   };
@@ -73,7 +78,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const result = await syncReminders(token, opts);
+    const result = await syncReminders(token, opts, which);
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     console.error("calendar sync failed", err);

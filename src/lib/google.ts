@@ -285,14 +285,42 @@ export async function readModule(
 /* ------------------------------- reminders -------------------------------- */
 export interface ReminderOptions {
   startDate: string; // YYYY-MM-DD in the user's timezone
+  dailyWeekdaysOnly: boolean;
   dailyTime: string; // "HH:MM"
   weeklyDay: number; // 0=Sun .. 6=Sat
   weeklyTime: string;
+  quarterlyDay: number; // day of month (1–28)
   quarterlyTime: string;
   timeZone: string;
 }
 
+export type SyncScope = "all" | "daily" | "weekly" | "quarterly";
+
 const RRULE_DAY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+
+const fmtDate = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+
+/** Next `day`-of-month falling in a quarter month (Jan/Apr/Jul/Oct), on/after ref. */
+function nextQuarterlyDate(
+  startDate: string,
+  day: number
+): { date: string; end: string } {
+  const ref = new Date(`${startDate}T00:00:00`);
+  const months = [0, 3, 6, 9];
+  for (let y = 0; y <= 1; y++) {
+    for (const mo of months) {
+      const d = new Date(ref.getFullYear() + y, mo, day);
+      if (d.getTime() >= ref.getTime()) {
+        const s = fmtDate(d);
+        return { date: s, end: nextDay(s) };
+      }
+    }
+  }
+  return { date: startDate, end: nextDay(startDate) };
+}
 
 const addMinutes = (hhmm: string, mins: number): string => {
   const [h, m] = hhmm.split(":").map(Number);
@@ -315,10 +343,12 @@ const nextDay = (date: string): string => {
  */
 export async function syncReminders(
   accessToken: string,
-  opts: ReminderOptions
+  opts: ReminderOptions,
+  which: SyncScope = "all"
 ): Promise<{ created: string[] }> {
   const cal = calendarApi(accessToken);
   const { startDate, timeZone } = opts;
+  const quarterly = nextQuarterlyDate(startDate, opts.quarterlyDay);
 
   const specs = [
     {
@@ -331,7 +361,11 @@ export async function syncReminders(
           dateTime: `${startDate}T${addMinutes(opts.dailyTime, 15)}:00`,
           timeZone,
         },
-        recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"],
+        recurrence: [
+          opts.dailyWeekdaysOnly
+            ? "RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
+            : "RRULE:FREQ=DAILY",
+        ],
         reminders: {
           useDefault: false,
           overrides: [{ method: "popup", minutes: 0 }],
@@ -364,9 +398,11 @@ export async function syncReminders(
       body: {
         summary: "導航日・季度深度重啟（給自己留一整天）",
         description: "一步一題的深度重啟，最後留下一張身分宣告卡。",
-        start: { date: startDate },
-        end: { date: nextDay(startDate) },
-        recurrence: ["RRULE:FREQ=MONTHLY;INTERVAL=3"],
+        start: { date: quarterly.date },
+        end: { date: quarterly.end },
+        recurrence: [
+          `RRULE:FREQ=YEARLY;BYMONTH=1,4,7,10;BYMONTHDAY=${opts.quarterlyDay}`,
+        ],
         reminders: {
           useDefault: false,
           overrides: [{ method: "popup", minutes: 9 * 60 }],
@@ -376,8 +412,9 @@ export async function syncReminders(
     },
   ];
 
+  const selected = which === "all" ? specs : specs.filter((s) => s.type === which);
   const created: string[] = [];
-  for (const spec of specs) {
+  for (const spec of selected) {
     await deleteRemindersByType(cal, spec.type); // replace any previous series
     await cal.events.insert({ calendarId: "primary", requestBody: spec.body });
     created.push(spec.type);

@@ -2,9 +2,11 @@
 
 export interface ReminderPrefs {
   browserEnabled: boolean;
-  dailyTime: string; // "HH:MM", fired on weekdays
+  dailyWeekdaysOnly: boolean; // true = only Mon–Fri, false = every day
+  dailyTime: string; // "HH:MM"
   weeklyDay: number; // 0=Sun .. 6=Sat — which day the weekly reminder fires
   weeklyTime: string; // "HH:MM"
+  quarterlyDay: number; // day of month (1–28) for the quarterly reminder
   quarterlyTime: string; // used for calendar sync only
 }
 
@@ -23,9 +25,11 @@ export const WEEKDAY_LABELS = [
 
 export const DEFAULT_PREFS: ReminderPrefs = {
   browserEnabled: false,
+  dailyWeekdaysOnly: true,
   dailyTime: "21:00",
   weeklyDay: 0, // Sunday by default
   weeklyTime: "20:00",
+  quarterlyDay: 1,
   quarterlyTime: "10:00",
 };
 
@@ -74,13 +78,15 @@ const parse = (hhmm: string): [number, number] => {
   return [h || 0, m || 0];
 };
 
-function nextWeekday(time: string, now = new Date()): Date {
+function nextDaily(time: string, weekdaysOnly: boolean, now = new Date()): Date {
   const [h, m] = parse(time);
   const d = new Date(now);
   d.setSeconds(0, 0);
   d.setHours(h, m, 0, 0);
   if (d <= now) d.setDate(d.getDate() + 1);
-  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1); // skip weekend
+  if (weekdaysOnly) {
+    while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+  }
   return d;
 }
 
@@ -127,10 +133,10 @@ export function startLocalReminders(prefs: ReminderPrefs): () => void {
   };
 
   schedule(
-    nextWeekday(prefs.dailyTime),
+    nextDaily(prefs.dailyTime, prefs.dailyWeekdaysOnly),
     "導航日・每日打卡",
     "花兩分鐘，把今天的自己寫回來。",
-    () => nextWeekday(prefs.dailyTime)
+    () => nextDaily(prefs.dailyTime, prefs.dailyWeekdaysOnly)
   );
   schedule(
     nextOnDay(prefs.weeklyTime, prefs.weeklyDay),
