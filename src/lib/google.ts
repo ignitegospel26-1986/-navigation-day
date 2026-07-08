@@ -289,12 +289,12 @@ export interface ReminderOptions {
   dailyTime: string; // "HH:MM"
   weeklyDay: number; // 0=Sun .. 6=Sat
   weeklyTime: string;
-  quarterlyDay: number; // day of month (1–28)
+  quarterlyDay: number; // day of the quarter (1–90)
   quarterlyTime: string;
   timeZone: string;
 }
 
-export type SyncScope = "all" | "daily" | "weekly" | "quarterly";
+export type ReminderType = "daily" | "weekly" | "quarterly";
 
 const RRULE_DAY = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 
@@ -302,24 +302,32 @@ const fmtDate = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
     d.getDate()
   ).padStart(2, "0")}`;
+const fmtCompact = (d: Date): string => fmtDate(d).replace(/-/g, "");
 
-/** Next `day`-of-month falling in a quarter month (Jan/Apr/Jul/Oct), on/after ref. */
-function nextQuarterlyDate(
+/**
+ * Explicit quarterly occurrence dates: the `day`-th day (1–90) of each quarter
+ * (quarters start Jan/Apr/Jul/Oct), for the next few years, on/after the ref
+ * date. Returned as a first date (DTSTART) + RDATEs for the rest.
+ */
+function quarterlyDates(
   startDate: string,
   day: number
-): { date: string; end: string } {
+): { first: string; rdates: string[] } {
   const ref = new Date(`${startDate}T00:00:00`);
-  const months = [0, 3, 6, 9];
-  for (let y = 0; y <= 1; y++) {
-    for (const mo of months) {
-      const d = new Date(ref.getFullYear() + y, mo, day);
-      if (d.getTime() >= ref.getTime()) {
-        const s = fmtDate(d);
-        return { date: s, end: nextDay(s) };
-      }
+  const refTime = ref.getTime();
+  const out: Date[] = [];
+  for (let y = ref.getFullYear(); y <= ref.getFullYear() + 3; y++) {
+    for (const qm of [0, 3, 6, 9]) {
+      const d = new Date(y, qm, 1);
+      d.setDate(d.getDate() + (day - 1));
+      if (d.getTime() >= refTime) out.push(d);
     }
   }
-  return { date: startDate, end: nextDay(startDate) };
+  out.sort((a, b) => a.getTime() - b.getTime());
+  const dates = out.slice(0, 12);
+  const first = dates.length ? fmtDate(dates[0]) : startDate;
+  const rdates = dates.slice(1).map(fmtCompact);
+  return { first, rdates };
 }
 
 const addMinutes = (hhmm: string, mins: number): string => {
@@ -344,11 +352,11 @@ const nextDay = (date: string): string => {
 export async function syncReminders(
   accessToken: string,
   opts: ReminderOptions,
-  which: SyncScope = "all"
+  types: ReminderType[] = ["daily", "weekly", "quarterly"]
 ): Promise<{ created: string[] }> {
   const cal = calendarApi(accessToken);
   const { startDate, timeZone } = opts;
-  const quarterly = nextQuarterlyDate(startDate, opts.quarterlyDay);
+  const quarterly = quarterlyDates(startDate, opts.quarterlyDay);
 
   const specs = [
     {
@@ -398,11 +406,11 @@ export async function syncReminders(
       body: {
         summary: "導航日・季度深度重啟（給自己留一整天）",
         description: "一步一題的深度重啟，最後留下一張身分宣告卡。",
-        start: { date: quarterly.date },
-        end: { date: quarterly.end },
-        recurrence: [
-          `RRULE:FREQ=YEARLY;BYMONTH=1,4,7,10;BYMONTHDAY=${opts.quarterlyDay}`,
-        ],
+        start: { date: quarterly.first },
+        end: { date: nextDay(quarterly.first) },
+        recurrence: quarterly.rdates.length
+          ? [`RDATE;VALUE=DATE:${quarterly.rdates.join(",")}`]
+          : [],
         reminders: {
           useDefault: false,
           overrides: [{ method: "popup", minutes: 9 * 60 }],
@@ -412,7 +420,7 @@ export async function syncReminders(
     },
   ];
 
-  const selected = which === "all" ? specs : specs.filter((s) => s.type === which);
+  const selected = specs.filter((s) => types.includes(s.type as ReminderType));
   const created: string[] = [];
   for (const spec of selected) {
     await deleteRemindersByType(cal, spec.type); // replace any previous series
@@ -472,13 +480,12 @@ async function deleteRemindersByType(
   return removed;
 }
 
-/** Remove the app's reminders from the user's calendar (all, or one type). */
+/** Remove the given reminder types from the user's calendar. */
 export async function removeReminders(
   accessToken: string,
-  which: SyncScope = "all"
+  types: ReminderType[]
 ): Promise<{ removed: number }> {
   const cal = calendarApi(accessToken);
-  const types = which === "all" ? REMINDER_TYPES : [which];
   let removed = 0;
   for (const type of types) {
     removed += await deleteRemindersByType(cal, type);
@@ -486,15 +493,20 @@ export async function removeReminders(
   return { removed };
 }
 
-/** Whether this app currently has any reminder series in the user's calendar. */
-export async function countReminders(
+/** Which reminder series this app currently has in the user's calendar. */
+export async function syncStatus(
   accessToken: string
-): Promise<{ synced: boolean }> {
+): Promise<Record<ReminderType, boolean>> {
   const cal = calendarApi(accessToken);
+  const out: Record<ReminderType, boolean> = {
+    daily: false,
+    weekly: false,
+    quarterly: false,
+  };
   for (const type of REMINDER_TYPES) {
-    if ((await masterIdsForType(cal, type)).size > 0) return { synced: true };
+    out[type] = (await masterIdsForType(cal, type)).size > 0;
   }
-  return { synced: false };
+  return out;
 }
 
 export { calendarApi };

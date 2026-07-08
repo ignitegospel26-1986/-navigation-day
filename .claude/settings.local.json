@@ -56,7 +56,8 @@
       "PowerShell(try { $r = Invoke-WebRequest -Uri \"https://navigationday.app/api/health\" -TimeoutSec 25 -UseBasicParsing; \"health: HTTP \" + $r.StatusCode } catch { \"部署中: \" + $_.Exception.Message })",
       "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; Remove-Item -Recurse -Force \".next\" -ErrorAction SilentlyContinue; npx tsc --noEmit 2>&1 | Select-Object -First 25; \"TSC EXIT: $LASTEXITCODE\")",
       "PowerShell(git commit -m \"Reminders: quarterly day-of-month, daily weekdays/everyday, selectable calendar sync scope\" -m \"Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\")",
-      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; Remove-Item -Recurse -Force \".next\" -ErrorAction SilentlyContinue; npx tsc --noEmit 2>&1 | Select-Object -First 30; \"TSC EXIT: $LASTEXITCODE\")"
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; Remove-Item -Recurse -Force \".next\" -ErrorAction SilentlyContinue; npx tsc --noEmit 2>&1 | Select-Object -First 30; \"TSC EXIT: $LASTEXITCODE\")",
+      "PowerShell(git commit -m \"Reminders: styled time picker, simpler labels, day-of-quarter \\(N/90\\), multi-select sync/remove with status\" -m \"Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\")"
     ]
   }
 }
