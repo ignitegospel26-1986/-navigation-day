@@ -472,13 +472,15 @@ async function deleteRemindersByType(
   return removed;
 }
 
-/** Remove all reminders this app created from the user's own calendar. */
+/** Remove the app's reminders from the user's calendar (all, or one type). */
 export async function removeReminders(
-  accessToken: string
+  accessToken: string,
+  which: SyncScope = "all"
 ): Promise<{ removed: number }> {
   const cal = calendarApi(accessToken);
+  const types = which === "all" ? REMINDER_TYPES : [which];
   let removed = 0;
-  for (const type of REMINDER_TYPES) {
+  for (const type of types) {
     removed += await deleteRemindersByType(cal, type);
   }
   return { removed };

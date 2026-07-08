@@ -43,7 +43,20 @@
       "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; $env:NEXT_TELEMETRY_DISABLED = \"1\"; $env:AUTH_SECRET = \"x\"; $env:GOOGLE_CLIENT_ID = \"x\"; $env:GOOGLE_CLIENT_SECRET = \"x\"; npm run build 2>&1 | Select-String -Pattern \"Compiled|Failed|error|✓ Generating|/api/calendar\" | Select-Object -First 8)",
       "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; $env:NEXT_TELEMETRY_DISABLED = \"1\"; $env:AUTH_SECRET = \"x\"; $env:GOOGLE_CLIENT_ID = \"x\"; $env:GOOGLE_CLIENT_SECRET = \"x\"; npm run build 2>&1 | Select-String -Pattern \"Compiled|Failed|Error:|✓ Generating\" | Select-Object -First 8)",
       "PowerShell(git add -A)",
-      "PowerShell(git commit -m \"Records: at-least-one-field save, save confirmation, editable history; fix calendar sync detection\" -m \"Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\")"
+      "PowerShell(git commit -m \"Records: at-least-one-field save, save confirmation, editable history; fix calendar sync detection\" -m \"Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\")",
+      "PowerShell(git add src/components/settings-modal.tsx)",
+      "PowerShell(git commit -m \"Settings: fix toggle knob overflow \\(flex layout instead of absolute\\)\" -m \"Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\")",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; $env:NEXT_TELEMETRY_DISABLED = \"1\"; $env:AUTH_SECRET = \"x\"; $env:GOOGLE_CLIENT_ID = \"x\"; $env:GOOGLE_CLIENT_SECRET = \"x\"; npm run build 2>&1 | Select-String -Pattern \"Compiled|Failed|Error:|error TS|✓ Generating\" | Select-Object -First 12)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; Remove-Item -Recurse -Force \".next\" -ErrorAction SilentlyContinue; \"cleaned .next\"; $env:NEXT_TELEMETRY_DISABLED = \"1\"; $env:AUTH_SECRET = \"x\"; $env:GOOGLE_CLIENT_ID = \"x\"; $env:GOOGLE_CLIENT_SECRET = \"x\"; npm run build 2>&1 | Select-String -Pattern \"Compiled|Failed|Error:|error TS|Type error|✓ Generating\" | Select-Object -First 12)",
+      "PowerShell(git add src/lib/client.ts src/components/dashboard.tsx)",
+      "PowerShell(git commit -m \"Dashboard cards: show configured daily time, week-end suggestion, days left in quarter\" -m \"Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\")",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; $env:NEXT_TELEMETRY_DISABLED = \"1\"; $env:AUTH_SECRET = \"x\"; $env:GOOGLE_CLIENT_ID = \"x\"; $env:GOOGLE_CLIENT_SECRET = \"x\"; npm run build 2>&1 | Select-String -Pattern \"Compiled|Failed|Type error|error TS|✓ Generating\" | Select-Object -First 10)",
+      "PowerShell(git add src/lib/reminders.ts src/lib/google.ts src/app/api/calendar/route.ts src/components/settings-modal.tsx src/components/dashboard.tsx)",
+      "PowerShell(git commit -m \"Weekly reminder: user-selectable day of week; card shows chosen day \\(no suggestion\\)\" -m \"Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\")",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"https://navigationday.app/api/health\" -TimeoutSec 25 -UseBasicParsing; \"health: HTTP \" + $r.StatusCode } catch { \"部署中: \" + $_.Exception.Message })",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; Remove-Item -Recurse -Force \".next\" -ErrorAction SilentlyContinue; npx tsc --noEmit 2>&1 | Select-Object -First 25; \"TSC EXIT: $LASTEXITCODE\")",
+      "PowerShell(git commit -m \"Reminders: quarterly day-of-month, daily weekdays/everyday, selectable calendar sync scope\" -m \"Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>\")",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; Remove-Item -Recurse -Force \".next\" -ErrorAction SilentlyContinue; npx tsc --noEmit 2>&1 | Select-Object -First 30; \"TSC EXIT: $LASTEXITCODE\")"
     ]
   }
 }

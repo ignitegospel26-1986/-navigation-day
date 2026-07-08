@@ -24,12 +24,18 @@ export async function GET() {
   }
 }
 
-/** DELETE /api/calendar → remove the app's reminders from the user's calendar. */
-export async function DELETE() {
+/** DELETE /api/calendar?which=all|daily|weekly|quarterly → remove reminders. */
+export async function DELETE(req: Request) {
   const token = await requireToken();
   if (!token) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const w = new URL(req.url).searchParams.get("which");
+  const which: SyncScope = (["daily", "weekly", "quarterly"] as const).includes(
+    w as never
+  )
+    ? (w as SyncScope)
+    : "all";
   try {
-    const result = await removeReminders(token);
+    const result = await removeReminders(token, which);
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     console.error("calendar remove failed", err);

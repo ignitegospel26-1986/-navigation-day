@@ -21,6 +21,14 @@ import {
   type ReminderPrefs,
 } from "@/lib/reminders";
 
+type CalScope = "all" | "daily" | "weekly" | "quarterly";
+const SCOPE_LABELS: Record<CalScope, string> = {
+  all: "全部",
+  daily: "只每日",
+  weekly: "只每週",
+  quarterly: "只季度",
+};
+
 export function SettingsModal({
   open,
   onClose,
@@ -37,12 +45,13 @@ export function SettingsModal({
   const [prefs, setPrefs] = useState<ReminderPrefs>(DEFAULT_PREFS);
   const [perm, setPerm] = useState<NotificationPermission | "unsupported">("default");
   const [synced, setSynced] = useState<boolean | null>(null);
-  const [calStep, setCalStep] = useState<"idle" | "confirm">("idle");
+  const [calStep, setCalStep] = useState<"idle" | "confirm" | "confirmRemove">(
+    "idle"
+  );
   const [calBusy, setCalBusy] = useState(false);
   const [calMsg, setCalMsg] = useState<string | null>(null);
-  const [syncScope, setSyncScope] = useState<
-    "all" | "daily" | "weekly" | "quarterly"
-  >("all");
+  const [syncScope, setSyncScope] = useState<CalScope>("all");
+  const [removeScope, setRemoveScope] = useState<CalScope>("all");
 
   useEffect(() => {
     if (!open) return;
@@ -111,9 +120,20 @@ export function SettingsModal({
     setCalBusy(true);
     setCalMsg(null);
     try {
-      await jsonFetch("/api/calendar", { method: "DELETE" });
-      setSynced(false);
-      setCalMsg("已從你的行事曆移除這些提醒。");
+      await jsonFetch(`/api/calendar?which=${removeScope}`, {
+        method: "DELETE",
+      });
+      // A partial removal may leave other series, so re-check the status.
+      const s = await jsonFetch<{ synced: boolean }>("/api/calendar").catch(
+        () => ({ synced: false })
+      );
+      setSynced(s.synced);
+      setCalStep("idle");
+      setCalMsg(
+        removeScope === "all"
+          ? "已移除全部行事曆提醒。"
+          : `已移除「${SCOPE_LABELS[removeScope].replace("只", "")}」提醒。`
+      );
     } catch {
       setCalMsg("移除失敗，請再試一次。");
     } finally {
@@ -421,9 +441,23 @@ export function SettingsModal({
               </div>
               <p className="text-[13px] text-ink-soft">即將建立：</p>
               <ul className="mt-1.5 space-y-1 text-[13px] text-ink-soft">
-                {shownItems.map((i) => (
-                  <li key={i.key}>· {i.text}</li>
-                ))}
+                {(syncScope === "all" || syncScope === "daily") && (
+                  <li>
+                    · {prefs.dailyWeekdaysOnly ? "平日每天" : "每天"}{" "}
+                    {prefs.dailyTime}：每日打卡
+                  </li>
+                )}
+                {(syncScope === "all" || syncScope === "weekly") && (
+                  <li>
+                    · 每{WEEKDAY_LABELS[prefs.weeklyDay]} {prefs.weeklyTime}
+                    ：每週整理
+                  </li>
+                )}
+                {(syncScope === "all" || syncScope === "quarterly") && (
+                  <li>
+                    · 每年 1/4/7/10 月第 {prefs.quarterlyDay} 天：季度深度重啟（整天）
+                  </li>
+                )}
               </ul>
               <p className="mt-2 text-[12px] text-muted">
                 重複同步會取代舊的，不會重複建立。要改日子/時間，先到上方「提醒時段」調整。
@@ -436,6 +470,43 @@ export function SettingsModal({
                   className="btn btn-primary px-4 py-2 text-sm disabled:opacity-50"
                 >
                   {calBusy ? "同步中⋯" : "確認同步"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCalStep("idle")}
+                  disabled={calBusy}
+                  className="btn btn-ghost px-4 py-2 text-sm"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          ) : calStep === "confirmRemove" ? (
+            <div className="mt-3 rounded-xl border border-hairline bg-surface-2/50 p-4">
+              <div className="mb-2.5 flex items-center gap-2">
+                <span className="text-[13px] font-medium text-ink">移除範圍</span>
+                <select
+                  value={removeScope}
+                  onChange={(e) => setRemoveScope(e.target.value as CalScope)}
+                  className="rounded-lg border border-hairline bg-paper px-2.5 py-1 text-[13px] text-ink"
+                >
+                  <option value="all">全部</option>
+                  <option value="daily">只每日</option>
+                  <option value="weekly">只每週</option>
+                  <option value="quarterly">只季度</option>
+                </select>
+              </div>
+              <p className="text-[12px] text-muted">
+                會把選定的提醒從你的 Google 行事曆刪掉。
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={doRemove}
+                  disabled={calBusy}
+                  className="btn btn-primary px-4 py-2 text-sm disabled:opacity-50"
+                >
+                  {calBusy ? "移除中⋯" : "確認移除"}
                 </button>
                 <button
                   type="button"
@@ -464,6 +535,7 @@ export function SettingsModal({
                   type="button"
                   onClick={() => {
                     setCalMsg(null);
+                    setSyncScope("all");
                     setCalStep("confirm");
                   }}
                   className="btn btn-primary px-5 py-2.5 text-sm"
@@ -473,11 +545,14 @@ export function SettingsModal({
                 {synced && (
                   <button
                     type="button"
-                    onClick={doRemove}
-                    disabled={calBusy}
-                    className="btn btn-ghost px-4 py-2.5 text-sm disabled:opacity-50"
+                    onClick={() => {
+                      setCalMsg(null);
+                      setRemoveScope("all");
+                      setCalStep("confirmRemove");
+                    }}
+                    className="btn btn-ghost px-4 py-2.5 text-sm"
                   >
-                    {calBusy ? "移除中⋯" : "移除行事曆提醒"}
+                    移除行事曆提醒
                   </button>
                 )}
               </div>
