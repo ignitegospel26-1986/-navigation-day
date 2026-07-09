@@ -89,7 +89,8 @@
   --font-sans: ui-sans-serif, system-ui, "Noto Sans TC", "PingFang TC",
     "Microsoft JhengHei", sans-serif;
 
-  --radius-xl: 1.25rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 0.75rem;
 }
 
 html {
@@ -147,7 +148,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 9999px;
+  border-radius: 0.625rem;
   font-weight: 500;
   transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1),
     background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease,
@@ -185,7 +186,7 @@ body {
   width: 100%;
   background-color: var(--paper);
   border: 1px solid var(--hairline);
-  border-radius: 0.85rem;
+  border-radius: 0.5rem;
   color: var(--ink);
   transition: border-color 0.2s ease, box-shadow 0.2s ease,
     background-color 0.2s ease;

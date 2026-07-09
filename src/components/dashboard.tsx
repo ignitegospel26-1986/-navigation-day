@@ -504,7 +504,7 @@ function ModuleCard({
         <div className="flex items-center gap-2">
           <p className="font-serif text-lg text-ink">{title}</p>
           {done && (
-            <span className="rounded-full border border-accent/40 bg-accent-tint px-2 py-0.5 text-[11px] text-accent">
+            <span className="rounded-md border border-accent/40 bg-accent-tint px-2 py-0.5 text-[11px] text-accent">
               已填 · 可修改
             </span>
           )}

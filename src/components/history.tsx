@@ -194,7 +194,7 @@ function Segmented({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="inline-flex rounded-full border border-hairline bg-surface-2/60 p-0.5">
+    <div className="inline-flex rounded-lg border border-hairline bg-surface-2/60 p-0.5">
       {options.map(([v, label]) => {
         const active = value === v;
         return (
@@ -202,7 +202,7 @@ function Segmented({
             key={v}
             type="button"
             onClick={() => onChange(v)}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
               active
                 ? "bg-accent text-[#fbf7ee] dark:text-[#16130f]"
                 : "text-ink-soft hover:text-ink"
@@ -299,7 +299,7 @@ function MonthCalendar({
               } ${isToday ? "ring-1 ring-accent" : ""}`}
             >
               <span className="tabular-nums">{day}</span>
-              {has && <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-accent" />}
+              {has && <span className="mt-0.5 h-1.5 w-1.5 rounded-lg bg-accent" />}
             </button>
           );
         })}
@@ -409,7 +409,7 @@ function QuestionTimeline({
                 <span className="text-[13px] text-muted">
                   {periodLabel(module, it.period)}
                 </span>
-                <span className="rounded-full border border-hairline px-1.5 py-0.5 text-[10px] text-muted">
+                <span className="rounded-lg border border-hairline px-1.5 py-0.5 text-[10px] text-muted">
                   {it.tone === "sharp" ? "犀利" : "溫柔"}
                 </span>
               </div>
@@ -516,7 +516,7 @@ function DetailModal({
             {detail ? periodLabel(detail.module, detail.period) : ""}
           </h2>
           {detail?.values && mode === "view" && (
-            <span className="mt-2 inline-block rounded-full border border-hairline px-2 py-0.5 text-[11px] text-muted">
+            <span className="mt-2 inline-block rounded-lg border border-hairline px-2 py-0.5 text-[11px] text-muted">
               當時語氣：{tone === "sharp" ? "犀利" : "溫柔"}
             </span>
           )}

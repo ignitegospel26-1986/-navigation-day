@@ -208,7 +208,7 @@ export function SettingsModal({
           <p className="mb-3 mt-1 text-[13px] text-muted">
             決定「每週整理」算作同一週的範圍。預設從週日開始。
           </p>
-          <div className="inline-flex rounded-full border border-hairline bg-surface-2/60 p-0.5">
+          <div className="inline-flex rounded-lg border border-hairline bg-surface-2/60 p-0.5">
             {(
               [
                 ["sun", "週日～週六"],
@@ -221,7 +221,7 @@ export function SettingsModal({
                   key={v}
                   type="button"
                   onClick={() => setWeekStart(v)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                  className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
                     active
                       ? "bg-accent text-[#fbf7ee] dark:text-[#16130f]"
                       : "text-ink-soft hover:text-ink"
@@ -278,7 +278,7 @@ export function SettingsModal({
             <div>
               <span className="mb-1.5 block text-[13px] text-ink-soft">每日</span>
               <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex rounded-full border border-hairline bg-surface-2/60 p-0.5">
+                <div className="inline-flex rounded-lg border border-hairline bg-surface-2/60 p-0.5">
                   {(
                     [
                       [true, "只平日"],
@@ -291,7 +291,7 @@ export function SettingsModal({
                         key={label}
                         type="button"
                         onClick={() => update({ dailyWeekdaysOnly: v })}
-                        className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                        className={`rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors ${
                           active
                             ? "bg-accent text-[#fbf7ee] dark:text-[#16130f]"
                             : "text-ink-soft hover:text-ink"
