@@ -15,6 +15,7 @@ export function GoogleSignInButton({
     <button
       type="button"
       onClick={() => signIn("google", { callbackUrl })}
+      style={{ borderRadius: 9999 }}
       className={`btn btn-primary px-6 py-3 text-[15px] ${className}`}
     >
       <GoogleGlyph />

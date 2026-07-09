@@ -50,6 +50,7 @@ export function Landing() {
         <button
           type="button"
           onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+          style={{ borderRadius: 9999 }}
           className="btn btn-ghost bg-surface/60 px-4 py-1.5 text-sm backdrop-blur-sm"
         >
           登入
@@ -57,7 +58,7 @@ export function Landing() {
       </div>
 
       {/* 1 · Opening — the sentence stands alone, full screen */}
-      <section className="relative flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <section className="relative flex min-h-[100svh] flex-col items-center justify-center px-6 text-center">
         <motion.h1
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -87,21 +88,37 @@ export function Landing() {
           your own Google Calendar.
         </p>
 
-        <motion.div
+        <motion.button
+          type="button"
+          aria-label="往下看"
+          onClick={() =>
+            window.scrollBy({ top: window.innerHeight * 0.9, behavior: "smooth" })
+          }
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.4, duration: 1 }}
-          className="absolute bottom-10 flex flex-col items-center gap-2 text-muted"
+          transition={{ delay: 1.2, duration: 1 }}
+          className="absolute bottom-16 flex h-11 w-11 items-center justify-center rounded-full border border-ink/25 text-ink/75"
         >
-          <span className="text-[13px] tracking-wider">往下</span>
+          {/* faint breathing glow */}
           <motion.span
-            animate={{ y: [0, 7, 0] }}
-            transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-            className="text-lg"
+            className="absolute inset-0 rounded-full"
+            animate={{
+              boxShadow: [
+                "0 0 0 0 rgba(199,141,91,0)",
+                "0 0 16px 4px rgba(199,141,91,0.35)",
+                "0 0 0 0 rgba(199,141,91,0)",
+              ],
+            }}
+            transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+          />
+          <motion.span
+            className="relative text-lg leading-none"
+            animate={{ y: [0, 3, 0] }}
+            transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
           >
             ↓
           </motion.span>
-        </motion.div>
+        </motion.button>
       </section>
 
       {/* 2 · Problem statement */}
