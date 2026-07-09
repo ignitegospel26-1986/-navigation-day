@@ -498,9 +498,9 @@ function ModuleCard({
       type="button"
       onClick={onClick}
       whileHover={{ y: -2 }}
-      className="card flex w-full flex-col items-start p-5 text-left transition-shadow hover:shadow-lg"
+      className="card flex w-full items-center justify-between gap-4 p-5 text-left transition-shadow hover:shadow-lg"
     >
-      <div className="flex w-full items-center justify-between">
+      <div>
         <div className="flex items-center gap-2">
           <p className="font-serif text-lg text-ink">{title}</p>
           {done && (
@@ -509,10 +509,12 @@ function ModuleCard({
             </span>
           )}
         </div>
+        <p className="mt-2 text-[14px] text-ink-soft">{desc}</p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        <span className="text-[12px] text-muted">{hint}</span>
         <span className="text-lg text-accent">→</span>
       </div>
-      <p className="mt-0.5 text-[13px] text-muted">{hint}</p>
-      <p className="mt-2 text-[14px] text-ink-soft">{desc}</p>
     </motion.button>
   );
 }

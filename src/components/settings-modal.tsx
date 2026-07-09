@@ -592,7 +592,7 @@ function TimeSelect({
   const hour = h ?? "21";
   const min = m ?? "00";
   const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
-  const mins = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+  const mins = ["00", "15", "30", "45"];
   const cls =
     "rounded-lg border border-hairline bg-paper px-2.5 py-2 text-[15px] text-ink tabular-nums";
   return (
