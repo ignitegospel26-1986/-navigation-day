@@ -18,9 +18,11 @@ const reveal = {
 function Section({
   children,
   className = "",
+  arrow = false,
 }: {
   children: React.ReactNode;
   className?: string;
+  arrow?: boolean;
 }) {
   return (
     <motion.section
@@ -31,7 +33,56 @@ function Section({
       className={`mx-auto w-full max-w-2xl px-6 ${className}`}
     >
       {children}
+      {arrow && (
+        <div className="mt-20 flex justify-center">
+          <DownArrow />
+        </div>
+      )}
     </motion.section>
+  );
+}
+
+/**
+ * "Scroll down" cue. The breathing glow uses 2 keyframes + repeatType "reverse"
+ * so it fades out symmetrically instead of snapping back to dark.
+ */
+function DownArrow({ className = "" }: { className?: string }) {
+  return (
+    <motion.button
+      type="button"
+      aria-label="往下看"
+      onClick={() =>
+        window.scrollBy({ top: window.innerHeight * 0.9, behavior: "smooth" })
+      }
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 1 }}
+      className={`relative flex h-11 w-11 items-center justify-center rounded-full border border-ink/25 text-ink/75 ${className}`}
+    >
+      <motion.span
+        className="absolute inset-0 rounded-full"
+        animate={{
+          boxShadow: [
+            "0 0 0 0 rgba(199,141,91,0)",
+            "0 0 16px 4px rgba(199,141,91,0.35)",
+          ],
+        }}
+        transition={{
+          repeat: Infinity,
+          repeatType: "reverse",
+          duration: 1.6,
+          ease: "easeInOut",
+        }}
+      />
+      <motion.span
+        className="relative text-lg leading-none"
+        animate={{ y: [0, 3, 0] }}
+        transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
+      >
+        ↓
+      </motion.span>
+    </motion.button>
   );
 }
 
@@ -42,7 +93,9 @@ export function Landing() {
     <div className="landing-dark min-h-screen bg-paper text-ink">
       {/* Minimal top bar with a quick sign-in (no need to scroll to the CTA) */}
       <div className="fixed inset-x-0 top-0 z-30 flex items-center justify-between px-5 py-3.5 sm:px-8">
-        <span className="flex items-center gap-2 text-ink/85">
+        {/* Opaque (not translucent) background so scrolled content never shows
+            through the brand — no border/frame, per request. */}
+        <span className="flex items-center gap-2 rounded-full bg-paper px-3 py-1.5 text-ink/85">
           <Mark className="h-5 w-5" />
           <span className="font-serif text-sm">導航日</span>
           <span className="text-[10px] tracking-wide text-muted">Navigation Day</span>
@@ -88,41 +141,13 @@ export function Landing() {
           your own Google Calendar.
         </p>
 
-        <motion.button
-          type="button"
-          aria-label="往下看"
-          onClick={() =>
-            window.scrollBy({ top: window.innerHeight * 0.9, behavior: "smooth" })
-          }
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 1 }}
-          className="absolute bottom-16 flex h-11 w-11 items-center justify-center rounded-full border border-ink/25 text-ink/75"
-        >
-          {/* faint breathing glow */}
-          <motion.span
-            className="absolute inset-0 rounded-full"
-            animate={{
-              boxShadow: [
-                "0 0 0 0 rgba(199,141,91,0)",
-                "0 0 16px 4px rgba(199,141,91,0.35)",
-                "0 0 0 0 rgba(199,141,91,0)",
-              ],
-            }}
-            transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
-          />
-          <motion.span
-            className="relative text-lg leading-none"
-            animate={{ y: [0, 3, 0] }}
-            transition={{ repeat: Infinity, duration: 2.4, ease: "easeInOut" }}
-          >
-            ↓
-          </motion.span>
-        </motion.button>
+        <div className="absolute inset-x-0 bottom-16 flex justify-center">
+          <DownArrow />
+        </div>
       </section>
 
       {/* 2 · Problem statement */}
-      <Section className="py-28">
+      <Section className="py-28" arrow>
         <p className="font-serif text-2xl leading-relaxed text-ink sm:text-[28px] sm:leading-relaxed">
           改變不需要好幾年。
           <br />
@@ -136,7 +161,7 @@ export function Landing() {
       </Section>
 
       {/* 3 · Is / Is-not */}
-      <Section className="py-24">
+      <Section className="py-24" arrow>
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="rounded-2xl border border-hairline bg-surface/40 p-7">
             <p className="mb-4 font-serif text-xl text-accent">是</p>
@@ -158,7 +183,7 @@ export function Landing() {
       </Section>
 
       {/* 4 · Where the data lives */}
-      <Section className="py-24">
+      <Section className="py-24" arrow>
         <h2 className="font-serif text-2xl leading-relaxed text-ink sm:text-[28px]">
           你的紀錄只存在你自己的 Google 帳號裡。
         </h2>
@@ -171,7 +196,7 @@ export function Landing() {
       </Section>
 
       {/* 5 · Choose your tone (preview only) */}
-      <Section className="py-24">
+      <Section className="py-24" arrow>
         <h2 className="text-center font-serif text-2xl text-ink sm:text-[26px]">
           同一個問題，兩種問法，
           <br className="sm:hidden" />
@@ -192,7 +217,30 @@ export function Landing() {
         </span>
         <p className="font-serif text-2xl text-ink sm:text-3xl">準備好了嗎？</p>
         <div className="mt-8 flex justify-center">
-          <GoogleSignInButton label="使用 Google 登入，開始我的第一天" />
+          {/* The scroll-down glow "lands" here on the final page: the breathing
+              light now sits behind the sign-in button instead of an arrow. */}
+          <div className="relative inline-flex">
+            <motion.span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-full"
+              animate={{
+                boxShadow: [
+                  "0 0 0 0 rgba(199,141,91,0)",
+                  "0 0 30px 7px rgba(199,141,91,0.5)",
+                ],
+              }}
+              transition={{
+                repeat: Infinity,
+                repeatType: "reverse",
+                duration: 1.8,
+                ease: "easeInOut",
+              }}
+            />
+            <GoogleSignInButton
+              label="使用 Google 登入，開始我的第一天"
+              className="relative"
+            />
+          </div>
         </div>
         <p className="mx-auto mt-5 max-w-md text-[13px] leading-relaxed text-muted">
           登入即代表你已閱讀並理解上方的資料使用方式。
