@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { signIn } from "next-auth/react";
 import { Mark } from "@/components/brand";
@@ -18,11 +18,9 @@ const reveal = {
 function Section({
   children,
   className = "",
-  arrow = false,
 }: {
   children: React.ReactNode;
   className?: string;
-  arrow?: boolean;
 }) {
   return (
     <motion.section
@@ -33,32 +31,57 @@ function Section({
       className={`mx-auto w-full max-w-2xl px-6 ${className}`}
     >
       {children}
-      {arrow && (
-        <div className="mt-20 flex justify-center">
-          <DownArrow />
-        </div>
-      )}
     </motion.section>
   );
 }
 
 /**
- * "Scroll down" cue. The breathing glow uses 2 keyframes + repeatType "reverse"
- * so it fades out symmetrically instead of snapping back to dark.
+ * A single "scroll down" cue pinned to the bottom of the viewport — so it's
+ * never buried at the end of a tall section. Clicking snaps to the *next*
+ * section (never a fixed jump, which used to overshoot on tall pages), and it
+ * fades out once the final CTA page is reached (the breathing glow lands on the
+ * sign-in button there instead). The glow uses 2 keyframes + repeatType
+ * "reverse" so it breathes out symmetrically instead of snapping back to dark.
  */
-function DownArrow({ className = "" }: { className?: string }) {
+function ScrollCue() {
+  // Pages always load at the top, where the cue should be visible — start
+  // shown to avoid a flash, then let scroll position take over.
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    const update = () => {
+      const secs = Array.from(document.querySelectorAll("section"));
+      const last = secs[secs.length - 1];
+      if (!last) return;
+      // Hide once the final (CTA) section rises into the lower viewport.
+      setHidden(last.getBoundingClientRect().top < window.innerHeight * 0.75);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  const goNext = () => {
+    const secs = Array.from(document.querySelectorAll("section"));
+    // First section that starts below the current viewport top = the next page.
+    const next = secs.find((s) => s.getBoundingClientRect().top > 2);
+    if (next) next.scrollIntoView({ behavior: "smooth", block: "start" });
+    else window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  };
+
   return (
     <motion.button
       type="button"
       aria-label="往下看"
-      onClick={() =>
-        window.scrollBy({ top: window.innerHeight * 0.9, behavior: "smooth" })
-      }
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 1 }}
-      className={`relative flex h-11 w-11 items-center justify-center rounded-full border border-ink/25 text-ink/75 ${className}`}
+      onClick={goNext}
+      animate={{ opacity: hidden ? 0 : 1 }}
+      transition={{ duration: 0.4 }}
+      style={{ pointerEvents: hidden ? "none" : "auto" }}
+      className="fixed bottom-8 left-1/2 z-20 flex h-11 w-11 -translate-x-1/2 items-center justify-center rounded-full border border-ink/25 bg-paper/70 text-ink/75 backdrop-blur-sm"
     >
       <motion.span
         className="absolute inset-0 rounded-full"
@@ -141,13 +164,10 @@ export function Landing() {
           your own Google Calendar.
         </p>
 
-        <div className="absolute inset-x-0 bottom-16 flex justify-center">
-          <DownArrow />
-        </div>
       </section>
 
       {/* 2 · Problem statement */}
-      <Section className="py-28" arrow>
+      <Section className="py-28">
         <p className="font-serif text-2xl leading-relaxed text-ink sm:text-[28px] sm:leading-relaxed">
           改變不需要好幾年。
           <br />
@@ -161,7 +181,7 @@ export function Landing() {
       </Section>
 
       {/* 3 · Is / Is-not */}
-      <Section className="py-24" arrow>
+      <Section className="py-24">
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="rounded-2xl border border-hairline bg-surface/40 p-7">
             <p className="mb-4 font-serif text-xl text-accent">是</p>
@@ -183,7 +203,7 @@ export function Landing() {
       </Section>
 
       {/* 4 · Where the data lives */}
-      <Section className="py-24" arrow>
+      <Section className="py-24">
         <h2 className="font-serif text-2xl leading-relaxed text-ink sm:text-[28px]">
           你的紀錄只存在你自己的 Google 帳號裡。
         </h2>
@@ -196,7 +216,7 @@ export function Landing() {
       </Section>
 
       {/* 5 · Choose your tone (preview only) */}
-      <Section className="py-24" arrow>
+      <Section className="py-24">
         <h2 className="text-center font-serif text-2xl text-ink sm:text-[26px]">
           同一個問題，兩種問法，
           <br className="sm:hidden" />
@@ -252,6 +272,9 @@ export function Landing() {
           </PrivacyLink>
         </div>
       </Section>
+
+      {/* One fixed scroll cue for the whole flow (hidden on the CTA page). */}
+      <ScrollCue />
     </div>
   );
 }
