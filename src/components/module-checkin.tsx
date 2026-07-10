@@ -45,17 +45,23 @@ export function ModuleCheckin({
   const [confirmSave] = useConfirmSave();
   const [answers, setAnswers] = useState<Answers>({});
   const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
+  // Gate the modal on this: it only becomes visible once this period's record
+  // has finished loading, so it opens already populated (no empty-form flash).
+  const [loaded, setLoaded] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">(
     "idle"
   );
 
-  // Load an existing record for this period when the card opens.
+  // Load an existing record for this period when the card is triggered. The
+  // modal stays hidden until this resolves, then opens pre-filled.
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setLoaded(false);
+      return;
+    }
     let cancelled = false;
-    setLoading(true);
+    setLoaded(false);
     setStatus("idle");
     setConfirming(false);
     jsonFetch<{ existing: { answers: Record<string, string>; tone: Tone } | null }>(
@@ -87,7 +93,7 @@ export function ModuleCheckin({
         }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setLoaded(true);
       });
     return () => {
       cancelled = true;
@@ -138,7 +144,7 @@ export function ModuleCheckin({
   }
 
   return (
-    <Modal open={open} onClose={onClose} labelledBy="checkin-title">
+    <Modal open={open && loaded} onClose={onClose} labelledBy="checkin-title">
       <AnimatePresence mode="wait">
         {status === "done" ? (
           <motion.div
@@ -152,16 +158,6 @@ export function ModuleCheckin({
               {editing ? "已更新你的紀錄" : "已寫入你的試算表"}
             </p>
             <p className="mt-1.5 text-sm text-muted">{successNote}</p>
-          </motion.div>
-        ) : loading ? (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center gap-3 py-16 text-center text-muted"
-          >
-            <span className="h-6 w-6 animate-spin rounded-full border-2 border-hairline border-t-accent" />
-            <span className="text-sm">讀取這期的紀錄⋯</span>
           </motion.div>
         ) : (
           <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>

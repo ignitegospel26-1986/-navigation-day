@@ -61,12 +61,14 @@ export async function findSpace(accessToken: string): Promise<Space | null> {
   };
 }
 
-/** Recreate any of the three tabs that were manually deleted, keeping the rest
- *  (and their history) intact. Returns which tabs were repaired. */
+/** Recreate any of the three tabs that were manually deleted, and backfill each
+ *  existing tab's header row so column labels stay in sync with the current
+ *  question set (e.g. after new questions are appended). Only row 1 (headers) is
+ *  ever rewritten, and only when it has drifted — history rows are untouched. */
 export async function ensureTabs(
   accessToken: string,
   spreadsheetId: string
-): Promise<{ repaired: ModuleKey[] }> {
+): Promise<{ repaired: ModuleKey[]; headersUpdated: ModuleKey[] }> {
   const sheets = sheetsApi(accessToken);
   const meta = await sheets.spreadsheets.get({
     spreadsheetId,
@@ -77,32 +79,60 @@ export async function ensureTabs(
   );
   const modules: ModuleKey[] = ["daily", "weekly", "quarterly"];
   const missing = modules.filter((m) => !existing.has(SHEET_TABS[m].title));
-  if (!missing.length) return { repaired: [] };
 
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId,
-    requestBody: {
-      requests: missing.map((m) => ({
-        addSheet: {
-          properties: {
-            title: SHEET_TABS[m].title,
-            gridProperties: { frozenRowCount: 1 },
+  // 1. Recreate any missing tabs.
+  if (missing.length) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: missing.map((m) => ({
+          addSheet: {
+            properties: {
+              title: SHEET_TABS[m].title,
+              gridProperties: { frozenRowCount: 1 },
+            },
           },
-        },
-      })),
-    },
-  });
-  await sheets.spreadsheets.values.batchUpdate({
-    spreadsheetId,
-    requestBody: {
-      valueInputOption: "RAW",
-      data: missing.map((m) => ({
-        range: `${SHEET_TABS[m].title}!A1`,
-        values: [moduleHeaders(m)],
-      })),
-    },
-  });
-  return { repaired: missing };
+        })),
+      },
+    });
+  }
+
+  // 2. For tabs that already existed, detect header drift (new/renamed columns)
+  //    by comparing row 1 against the expected headers.
+  const present = modules.filter((m) => existing.has(SHEET_TABS[m].title));
+  let headersUpdated: ModuleKey[] = [];
+  if (present.length) {
+    const got = await sheets.spreadsheets.values.batchGet({
+      spreadsheetId,
+      ranges: present.map((m) => `${SHEET_TABS[m].title}!1:1`),
+    });
+    const ranges = got.data.valueRanges ?? [];
+    headersUpdated = present.filter((m, i) => {
+      const current = (ranges[i]?.values?.[0] ?? []).map((v) => String(v ?? ""));
+      const expected = moduleHeaders(m);
+      return !(
+        current.length === expected.length &&
+        current.every((v, j) => v === expected[j])
+      );
+    });
+  }
+
+  // 3. Write headers for freshly-created tabs AND drifted existing tabs.
+  const toWrite = [...missing, ...headersUpdated];
+  if (toWrite.length) {
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        valueInputOption: "RAW",
+        data: toWrite.map((m) => ({
+          range: `${SHEET_TABS[m].title}!A1`,
+          values: [moduleHeaders(m)],
+        })),
+      },
+    });
+  }
+
+  return { repaired: missing, headersUpdated };
 }
 
 /** Un-trash a previously binned space (spreadsheet + its folder). */
