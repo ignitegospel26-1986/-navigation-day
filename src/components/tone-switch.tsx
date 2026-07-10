@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { motion } from "framer-motion";
 import type { Tone } from "@/lib/prompts";
 
@@ -18,6 +19,10 @@ export function ToneSwitch({
   size?: "sm" | "md";
 }) {
   const pad = size === "sm" ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm";
+  // Unique per instance: the dashboard and the in-modal switch must NOT share a
+  // layoutId, or closing the modal makes the pill fly across the screen between
+  // the two. Within one switch the id is stable, so it still slides 溫柔↔犀利.
+  const pillId = useId();
   return (
     <div className="inline-flex rounded-full border border-hairline bg-surface-2/60 p-0.5">
       {OPTIONS.map((o) => {
@@ -33,7 +38,7 @@ export function ToneSwitch({
           >
             {active && (
               <motion.span
-                layoutId="tone-pill"
+                layoutId={`tone-pill-${pillId}`}
                 className="absolute inset-0 rounded-full bg-accent"
                 transition={{ type: "spring", stiffness: 400, damping: 32 }}
               />
