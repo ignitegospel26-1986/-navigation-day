@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Brand } from "@/components/brand";
@@ -57,6 +57,10 @@ export function Dashboard({ name }: { name?: string | null }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [active, setActive] = useState<Active>(null);
+  // Which module's record is being fetched before its modal opens (arrow → spinner).
+  const [loadingModule, setLoadingModule] = useState<"daily" | "weekly" | null>(
+    null
+  );
   const [prefsVersion, setPrefsVersion] = useState(0);
   const [reminderTimes, setReminderTimes] = useState({
     daily: DEFAULT_PREFS.dailyTime,
@@ -133,6 +137,14 @@ export function Dashboard({ name }: { name?: string | null }) {
 
   const firstName = name?.split(" ")[0] ?? "你";
   const closeModal = () => setActive(null);
+  const onDailyLoading = useCallback(
+    (l: boolean) => setLoadingModule(l ? "daily" : null),
+    []
+  );
+  const onWeeklyLoading = useCallback(
+    (l: boolean) => setLoadingModule(l ? "weekly" : null),
+    []
+  );
   const closeSettings = () => {
     setActive(null);
     setPrefsVersion((v) => v + 1); // re-arm reminders with new prefs
@@ -178,6 +190,7 @@ export function Dashboard({ name }: { name?: string | null }) {
             weeklyTime={reminderTimes.weekly}
             weeklyDay={reminderTimes.weeklyDay}
             onOpen={setActive}
+            loadingModule={loadingModule}
             error={error}
           />
         )}
@@ -202,6 +215,7 @@ export function Dashboard({ name }: { name?: string | null }) {
             spreadsheetId={space.spreadsheetId}
             successNote="今天的你，被好好記下來了。"
             onSaved={() => setFilled((f) => ({ ...f, daily: true }))}
+            onLoadingChange={onDailyLoading}
           />
           <ModuleCheckin
             open={active === "weekly"}
@@ -216,6 +230,7 @@ export function Dashboard({ name }: { name?: string | null }) {
             spreadsheetId={space.spreadsheetId}
             successNote="這一週，被你好好收整了。"
             onSaved={() => setFilled((f) => ({ ...f, weekly: true }))}
+            onLoadingChange={onWeeklyLoading}
           />
           <QuarterlyReset
             open={active === "quarterly"}
@@ -358,6 +373,7 @@ function Console({
   weeklyTime,
   weeklyDay,
   onOpen,
+  loadingModule,
   error,
 }: {
   firstName: string;
@@ -370,6 +386,7 @@ function Console({
   weeklyTime: string;
   weeklyDay: number;
   onOpen: (a: Active) => void;
+  loadingModule: "daily" | "weekly" | null;
   error: string | null;
 }) {
   const hour = new Date().getHours();
@@ -448,7 +465,11 @@ function Console({
           <span className="text-[12px] tabular-nums text-muted">
             {dailyWeekdaysOnly ? "平日" : "每天"} {dailyTime}
           </span>
-          <span className="text-2xl text-accent">→</span>
+          {loadingModule === "daily" ? (
+            <CardSpinner className="h-6 w-6" />
+          ) : (
+            <span className="text-2xl text-accent">→</span>
+          )}
         </div>
       </motion.button>
 
@@ -459,6 +480,7 @@ function Console({
           hint={weeklyHint}
           desc="命名這一週真正主導你的內在模式。"
           done={!!filled.weekly}
+          loading={loadingModule === "weekly"}
           onClick={() => onOpen("weekly")}
         />
         <ModuleCard
@@ -480,17 +502,29 @@ function Console({
   );
 }
 
+function CardSpinner({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <span
+      role="status"
+      aria-label="讀取中"
+      className={`inline-block animate-spin rounded-full border-2 border-accent/30 border-t-accent ${className}`}
+    />
+  );
+}
+
 function ModuleCard({
   title,
   hint,
   desc,
   done,
+  loading,
   onClick,
 }: {
   title: string;
   hint: string;
   desc: string;
   done?: boolean;
+  loading?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -513,7 +547,11 @@ function ModuleCard({
       </div>
       <div className="flex shrink-0 flex-col items-end gap-2">
         <span className="text-[12px] text-muted">{hint}</span>
-        <span className="text-lg text-accent">→</span>
+        {loading ? (
+          <CardSpinner className="h-5 w-5" />
+        ) : (
+          <span className="text-lg text-accent">→</span>
+        )}
       </div>
     </motion.button>
   );

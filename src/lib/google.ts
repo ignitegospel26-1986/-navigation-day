@@ -375,6 +375,21 @@ const nextDay = (date: string): string => {
 };
 
 /**
+ * First date on/after `startDate` whose weekday is in `allowed` (0=Sun..6=Sat).
+ * DTSTART must land on a day the RRULE's BYDAY allows, otherwise Google Calendar
+ * emits an extra occurrence on the (mismatched) start day — e.g. a Sunday start
+ * with a Mon–Fri rule shows up as Sun–Fri.
+ */
+const alignToWeekday = (startDate: string, allowed: number[]): string => {
+  const d = new Date(`${startDate}T00:00:00`);
+  for (let i = 0; i < 7; i++) {
+    if (allowed.includes(d.getDay())) return fmtDate(d);
+    d.setDate(d.getDate() + 1);
+  }
+  return startDate;
+};
+
+/**
  * Create (or replace) the three recurring reminders in the user's OWN primary
  * calendar. Idempotent: existing lifeReset events are removed first, tagged via
  * a private extended property, so re-syncing never piles up duplicates.
@@ -388,15 +403,21 @@ export async function syncReminders(
   const { startDate, timeZone } = opts;
   const quarterly = quarterlyDates(startDate, opts.quarterlyDay);
 
+  // Anchor each series' DTSTART on a day its RRULE actually allows.
+  const dailyStart = opts.dailyWeekdaysOnly
+    ? alignToWeekday(startDate, [1, 2, 3, 4, 5])
+    : startDate;
+  const weeklyStart = alignToWeekday(startDate, [opts.weeklyDay]);
+
   const specs = [
     {
       type: "daily",
       body: {
         summary: "導航日・每日打卡",
         description: "花兩分鐘，把今天的自己寫回來。",
-        start: { dateTime: `${startDate}T${opts.dailyTime}:00`, timeZone },
+        start: { dateTime: `${dailyStart}T${opts.dailyTime}:00`, timeZone },
         end: {
-          dateTime: `${startDate}T${addMinutes(opts.dailyTime, 15)}:00`,
+          dateTime: `${dailyStart}T${addMinutes(opts.dailyTime, 15)}:00`,
           timeZone,
         },
         recurrence: [
@@ -416,9 +437,9 @@ export async function syncReminders(
       body: {
         summary: "導航日・每週整理",
         description: "週日的深呼吸，命名這一週真正主導你的內在模式。",
-        start: { dateTime: `${startDate}T${opts.weeklyTime}:00`, timeZone },
+        start: { dateTime: `${weeklyStart}T${opts.weeklyTime}:00`, timeZone },
         end: {
-          dateTime: `${startDate}T${addMinutes(opts.weeklyTime, 20)}:00`,
+          dateTime: `${weeklyStart}T${addMinutes(opts.weeklyTime, 20)}:00`,
           timeZone,
         },
         recurrence: [

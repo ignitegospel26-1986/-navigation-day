@@ -27,6 +27,7 @@ export function ModuleCheckin({
   onToneChange,
   spreadsheetId,
   onSaved,
+  onLoadingChange,
   successNote = "這一刻的你，被好好記下來了。",
 }: {
   open: boolean;
@@ -40,6 +41,9 @@ export function ModuleCheckin({
   onToneChange: (t: Tone) => void;
   spreadsheetId: string;
   onSaved?: () => void;
+  /** Reports whether the record is being fetched before the modal opens, so the
+   *  trigger card can show a loading cue in place of its arrow. */
+  onLoadingChange?: (loading: boolean) => void;
   successNote?: string;
 }) {
   const [confirmSave] = useConfirmSave();
@@ -99,6 +103,11 @@ export function ModuleCheckin({
       cancelled = true;
     };
   }, [open, module, period, questions]);
+
+  // Surface "fetching before open" to the trigger card (arrow → spinner).
+  useEffect(() => {
+    onLoadingChange?.(open && !loaded);
+  }, [open, loaded, onLoadingChange]);
 
   const set = (k: string, v: string | number) =>
     setAnswers((a) => ({ ...a, [k]: v }));
