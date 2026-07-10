@@ -1,11 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { signIn } from "next-auth/react";
 import { Mark } from "@/components/brand";
 import { GoogleSignInButton } from "@/components/auth-buttons";
-import { PrivacyLink } from "@/components/privacy-modal";
 
 const ease = [0.2, 0.8, 0.2, 1] as const;
 
@@ -274,9 +274,14 @@ export function Landing() {
           我們只申請最小必要權限，不會存取你 Drive 裡其他任何檔案。
         </p>
         <div className="mt-6">
-          <PrivacyLink className="text-[13px] text-ink-soft underline underline-offset-4 hover:text-accent">
-            完整隱私說明
-          </PrivacyLink>
+          {/* A REAL crawlable link (not a modal button): Google's OAuth homepage
+              check requires the home page to link to the privacy policy. */}
+          <Link
+            href="/privacy"
+            className="text-[13px] text-ink-soft underline underline-offset-4 hover:text-accent"
+          >
+            完整隱私說明（隱私權政策 Privacy Policy）
+          </Link>
         </div>
       </Section>
 
