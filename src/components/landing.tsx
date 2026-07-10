@@ -18,9 +18,14 @@ const reveal = {
 function Section({
   children,
   className = "",
+  screen = false,
 }: {
   children: React.ReactNode;
   className?: string;
+  // `screen` makes the section fill at least one viewport and vertically
+  // centres its content, so each guided step is exactly one "page" — snapping
+  // to it never leaves the next section peeking in at the bottom.
+  screen?: boolean;
 }) {
   return (
     <motion.section
@@ -28,7 +33,9 @@ function Section({
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, margin: "-80px" }}
-      className={`mx-auto w-full max-w-2xl px-6 ${className}`}
+      className={`mx-auto w-full max-w-2xl px-6 ${
+        screen ? "flex min-h-[100svh] flex-col justify-center" : ""
+      } ${className}`}
     >
       {children}
     </motion.section>
@@ -167,7 +174,7 @@ export function Landing() {
       </section>
 
       {/* 2 · Problem statement */}
-      <Section className="py-28">
+      <Section className="py-28" screen>
         <p className="font-serif text-2xl leading-relaxed text-ink sm:text-[28px] sm:leading-relaxed">
           改變不需要好幾年。
           <br />
@@ -181,7 +188,7 @@ export function Landing() {
       </Section>
 
       {/* 3 · Is / Is-not */}
-      <Section className="py-24">
+      <Section className="py-24" screen>
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="rounded-2xl border border-hairline bg-surface/40 p-7">
             <p className="mb-4 font-serif text-xl text-accent">是</p>
@@ -203,7 +210,7 @@ export function Landing() {
       </Section>
 
       {/* 4 · Where the data lives */}
-      <Section className="py-24">
+      <Section className="py-24" screen>
         <h2 className="font-serif text-2xl leading-relaxed text-ink sm:text-[28px]">
           你的紀錄只存在你自己的 Google 帳號裡。
         </h2>
@@ -216,7 +223,7 @@ export function Landing() {
       </Section>
 
       {/* 5 · Choose your tone (preview only) */}
-      <Section className="py-24">
+      <Section className="py-24" screen>
         <h2 className="text-center font-serif text-2xl text-ink sm:text-[26px]">
           同一個問題，兩種問法，
           <br className="sm:hidden" />
