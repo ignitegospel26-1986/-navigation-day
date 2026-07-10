@@ -80,6 +80,26 @@ export const DAILY_QUESTIONS: Question[] = [
     sharp: "一句話，不用修飾",
     placeholder: "隨手記一句⋯⋯",
   },
+  // NOTE: appended at the end on purpose. Sheet columns are derived from this
+  // array's order, so inserting mid-list would shift every existing user's
+  // historical daily columns out of alignment. New questions must go last.
+  {
+    key: "oldIdentity",
+    type: "longtext",
+    label: "維護舊身分的行為",
+    gentle:
+      "今天有哪些行為，其實是在維持一個「已經不太適合我、卻很熟悉」的舊自己？（先看見就好，不用急著改）",
+    sharp: "我今天做的哪些事，只是在維護那個低效、早該淘汰的舊身分？",
+  },
+  {
+    key: "pretendUnimportant",
+    type: "longtext",
+    label: "假裝不重要的事",
+    gentle:
+      "有沒有一件其實很重要的事，我正在假裝它「還好、沒那麼要緊」？",
+    sharp:
+      "有哪件最重要的事，是我正在假裝它不重要——好讓自己可以繼續不去面對它？",
+  },
 ];
 
 /* ----------------------------- 每週整理 ----------------------------- */
