@@ -54,6 +54,25 @@ const POINTS: { h: string; body: React.ReactNode }[] = [
       </ul>
     ),
   },
+  {
+    h: "遵守 Google API 使用者資料政策（Limited Use）",
+    body: (
+      <>
+        導航日 Navigation Day 對透過 Google API 取得之資訊的使用與轉移，遵守{" "}
+        <a
+          href="https://developers.google.com/terms/api-services-user-data-policy"
+          target="_blank"
+          rel="noreferrer"
+          className="text-accent underline underline-offset-2"
+        >
+          Google API Services User Data Policy
+        </a>
+        ，包含其 <strong className="text-ink">Limited Use</strong> 限制使用規範。
+        我們不會將這些資料用於放送廣告，不會出售給任何第三方，也不會用於與此
+        App 的核心功能無關的用途。
+      </>
+    ),
+  },
 ];
 
 /** Shared privacy copy used by both the /privacy page and the popup modal. */
@@ -95,6 +114,19 @@ export function PrivacyContent({ compact = false }: { compact?: boolean }) {
           我們提供的是「筆和格式」，紙一直在你手上。
           你可以隨時把紙收走，我們手上什麼都不會留下。
         </p>
+      </div>
+
+      <div className="mt-8 text-[14px] leading-relaxed text-muted">
+        <p>
+          有任何隱私相關問題，歡迎來信：{" "}
+          <a
+            href="mailto:ignite.gospel.26@gmail.com"
+            className="text-ink-soft underline underline-offset-2 hover:text-accent"
+          >
+            ignite.gospel.26@gmail.com
+          </a>
+        </p>
+        <p className="mt-1">最後更新：2026 年 7 月 10 日</p>
       </div>
     </div>
   );
