@@ -452,9 +452,12 @@ function Console({
   loadingModule: "daily" | "weekly" | null;
   error: string | null;
 }) {
-  const hour = new Date().getHours();
+  // Minute-precise so the boundaries land exactly: 早安 04:01–11:00,
+  // 午安 11:01–16:00, 晚安 16:01–次日 04:00. (Reflects the time on each load.)
+  const now = new Date();
+  const mins = now.getHours() * 60 + now.getMinutes();
   const greet =
-    hour < 5 ? "夜深了" : hour < 11 ? "早安" : hour < 18 ? "午安" : "晚安";
+    mins >= 241 && mins <= 660 ? "早安" : mins >= 661 && mins <= 960 ? "午安" : "晚安";
 
   const weeklyHint = `每${WEEKDAY_LABELS[weeklyDay] ?? "週日"} ${weeklyTime}`;
   const quarterlyHint = `這一季還剩 ${daysLeftInQuarter()} 天`;
