@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Brand } from "@/components/brand";
@@ -27,6 +27,7 @@ import {
   getReminderPrefs,
   startLocalReminders,
 } from "@/lib/reminders";
+import { applyRemoteSettings, collectLocalSettings } from "@/lib/settings";
 
 type Filled = { daily?: boolean; weekly?: boolean; quarterly?: boolean };
 
@@ -62,6 +63,9 @@ export function Dashboard({ name }: { name?: string | null }) {
     null
   );
   const [prefsVersion, setPrefsVersion] = useState(0);
+  // Cloud-settings sync: hydrate from the 設定 tab on load, auto-save on change.
+  const [settingsHydrated, setSettingsHydrated] = useState(false);
+  const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [reminderTimes, setReminderTimes] = useState({
     daily: DEFAULT_PREFS.dailyTime,
     dailyWeekdaysOnly: DEFAULT_PREFS.dailyWeekdaysOnly,
@@ -116,6 +120,64 @@ export function Dashboard({ name }: { name?: string | null }) {
     });
   }, [space, trashed, weekPeriod]);
 
+  // Debounced save of all local settings into the user's 設定 tab.
+  const pushSettings = useCallback(() => {
+    if (!space || trashed) return;
+    const spreadsheetId = space.spreadsheetId;
+    if (pushTimer.current) clearTimeout(pushTimer.current);
+    pushTimer.current = setTimeout(() => {
+      jsonFetch("/api/settings", {
+        method: "PUT",
+        body: JSON.stringify({ spreadsheetId, settings: collectLocalSettings() }),
+      }).catch(() => {});
+    }, 700);
+  }, [space, trashed]);
+
+  // Hydrate settings from the cloud once the space is known. The sheet wins on
+  // load, so preferences follow the user across browsers; if none saved yet,
+  // seed the tab from the current local settings.
+  useEffect(() => {
+    if (!space || trashed) return;
+    let cancelled = false;
+    const spreadsheetId = space.spreadsheetId;
+    jsonFetch<{ settings: Record<string, string> | null }>(
+      `/api/settings?spreadsheetId=${encodeURIComponent(spreadsheetId)}`
+    )
+      .then((d) => {
+        if (cancelled) return;
+        if (d.settings && Object.keys(d.settings).length) {
+          applyRemoteSettings(d.settings);
+          setPrefsVersion((v) => v + 1); // refresh reminder-derived UI
+        } else {
+          jsonFetch("/api/settings", {
+            method: "PUT",
+            body: JSON.stringify({
+              spreadsheetId,
+              settings: collectLocalSettings(),
+            }),
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setSettingsHydrated(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [space, trashed]);
+
+  // After hydration, push whenever tone / week-start / confirm change (they emit
+  // StorageEvents). Reminder-pref edits are flushed on settings-modal close.
+  useEffect(() => {
+    if (!settingsHydrated) return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key && e.key.startsWith("lifereset:")) pushSettings();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [settingsHydrated, pushSettings]);
+
   async function createSpace(action?: "restore" | "create") {
     setCreating(true);
     setError(null);
@@ -148,6 +210,7 @@ export function Dashboard({ name }: { name?: string | null }) {
   const closeSettings = () => {
     setActive(null);
     setPrefsVersion((v) => v + 1); // re-arm reminders with new prefs
+    pushSettings(); // persist reminder/week-start/confirm edits to the 設定 tab
   };
 
   return (

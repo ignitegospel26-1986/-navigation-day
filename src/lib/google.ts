@@ -312,6 +312,72 @@ export async function readModule(
   return rows.slice(1) as string[][]; // drop header
 }
 
+/* -------------------------------- settings -------------------------------- */
+/** A key/value tab that persists the user's app preferences in their own Drive,
+ *  so tone/time/etc. settings follow them across browsers and devices. */
+export const SETTINGS_TAB = "設定";
+
+/** Read the settings tab as a key→value map. Null if the tab doesn't exist yet. */
+export async function readSettings(
+  accessToken: string,
+  spreadsheetId: string
+): Promise<Record<string, string> | null> {
+  try {
+    const res = await sheetsApi(accessToken).spreadsheets.values.get({
+      spreadsheetId,
+      range: `${SETTINGS_TAB}!A2:B`,
+    });
+    const rows = res.data.values ?? [];
+    if (!rows.length) return null;
+    const out: Record<string, string> = {};
+    for (const [k, v] of rows) if (k) out[String(k)] = v == null ? "" : String(v);
+    return out;
+  } catch {
+    // Missing tab → Sheets throws; treat as "no settings saved yet".
+    return null;
+  }
+}
+
+/** Create the settings tab if needed, then overwrite it with the given map. */
+export async function writeSettings(
+  accessToken: string,
+  spreadsheetId: string,
+  settings: Record<string, string>
+): Promise<void> {
+  const sheets = sheetsApi(accessToken);
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: "sheets.properties.title",
+  });
+  const exists = (meta.data.sheets ?? []).some(
+    (s) => s.properties?.title === SETTINGS_TAB
+  );
+  if (!exists) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            addSheet: {
+              properties: {
+                title: SETTINGS_TAB,
+                gridProperties: { frozenRowCount: 1 },
+              },
+            },
+          },
+        ],
+      },
+    });
+  }
+  const values = [["設定項目", "值"], ...Object.entries(settings)];
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: `${SETTINGS_TAB}!A1`,
+    valueInputOption: "RAW",
+    requestBody: { values },
+  });
+}
+
 /* ------------------------------- reminders -------------------------------- */
 export interface ReminderOptions {
   startDate: string; // YYYY-MM-DD in the user's timezone
