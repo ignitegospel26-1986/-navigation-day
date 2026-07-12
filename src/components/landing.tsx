@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { signIn } from "next-auth/react";
@@ -274,14 +273,15 @@ export function Landing() {
           我們只申請最小必要權限，不會存取你 Drive 裡其他任何檔案。
         </p>
         <div className="mt-6">
-          {/* A REAL crawlable link (not a modal button): Google's OAuth homepage
-              check requires the home page to link to the privacy policy. */}
-          <Link
-            href="/privacy"
+          {/* A REAL crawlable link (not a modal button), with an ABSOLUTE URL so
+              it matches the privacy-policy URL declared on the OAuth consent
+              screen exactly — Google's homepage check compares the two. */}
+          <a
+            href="https://navigationday.app/privacy"
             className="text-[13px] text-ink-soft underline underline-offset-4 hover:text-accent"
           >
             完整隱私說明（隱私權政策 Privacy Policy）
-          </Link>
+          </a>
         </div>
       </Section>
 
