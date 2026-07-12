@@ -107,10 +107,13 @@ export const WEEKLY_QUESTIONS: Question[] = [
   {
     key: "pattern",
     type: "longtext",
+    // Column header / analytics key stays "內在模式" (analytics finds this column
+    // by that header text, and old rows keep their column) — only the wording shown changes.
     label: "內在模式",
     gentle:
-      "這一週，主導我行為的內在模式是什麼？（只是命名它，不用苛責自己）",
-    sharp: "這一週真正在操控我的內在模式是什麼？別找環境的藉口。",
+      "這一週，有什麼感覺一直擋在我跟我想做的事之間？（先看見、為它命名就好，不用苛責自己）",
+    sharp:
+      "這一週，是什麼感覺一直擋在我跟我想做的事之間？別替它找藉口——直接指名它。",
     required: true,
   },
   {
