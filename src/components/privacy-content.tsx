@@ -12,24 +12,66 @@ const POINTS: { h: string; body: React.ReactNode }[] = [
     ),
   },
   {
-    h: "這個網站與伺服器不儲存你的內容",
+    h: "我們不會分享、轉移或揭露你的資料（誰能看到）",
     body: (
       <>
-        我們不建立自己的資料庫，也不備份、不快取你的答案。
-        伺服器只是在你操作的當下，用你的授權把資料
-        <strong className="text-ink">轉手寫進你自己的試算表</strong>，
-        寫完就結束。分析圖表也是每次即時從你的試算表讀取運算，不留在我們這裡。
+        導航日<strong className="text-ink">不會把你的 Google 使用者資料（Google
+        user data）分享、轉移或揭露給任何第三方</strong>——沒有廣告商、沒有資料仲介、
+        沒有第三方分析服務、沒有其他使用者、也沒有任何外部公司。你的資料唯一會去的
+        地方，是<strong className="text-ink">你自己的 Google 帳號</strong>：你自己的
+        Google Drive／試算表，以及（當你選擇同步時）你自己的 Google 行事曆——那是你
+        本人的儲存空間，不是第三方。我方伺服器不轉售、不交換、不對外揭露你的任何內容。
       </>
     ),
   },
   {
-    h: "你可以隨時檢視、匯出、刪除全部資料",
+    h: "我們如何保護你的資料（資料保護機制）",
     body: (
-      <>
-        因為資料就是一份你 Drive 裡的普通試算表，你隨時可以直接打開它、
-        用 Google Sheets 匯出成 Excel／CSV，或整份刪除。
-        刪除之後，這個 App 就再也讀不到任何東西——沒有別的副本。
-      </>
+      <ul className="mt-2 space-y-2">
+        <li>
+          你的資料在傳輸過程中
+          <strong className="text-ink">全程使用加密連線（HTTPS／TLS）</strong>。
+        </li>
+        <li>
+          我方伺服器<strong className="text-ink">不建立資料庫、不儲存、不備份、不快取
+          </strong>你的內容，因此沒有伺服器端的副本會被存取或外洩。
+        </li>
+        <li>
+          所有存取都必須經過<strong className="text-ink">你本人的 Google 授權（OAuth）
+          </strong>，且只申請最小必要權限。
+        </li>
+        <li>
+          <span className="text-muted">敏感資料：</span>敏感的行事曆權限（
+          <code className="rounded bg-surface-2 px-1 py-0.5 text-[13px] text-ink">
+            calendar.events
+          </code>
+          ）只在你主動按下同步時使用，且只把提醒寫進你自己的行事曆；我方不讀取、
+          不保存你行事曆裡的其他內容。
+        </li>
+      </ul>
+    ),
+  },
+  {
+    h: "資料的保留與刪除（Retention & Deletion）",
+    body: (
+      <ul className="mt-2 space-y-2">
+        <li>
+          <strong className="text-ink">保留：</strong>我方伺服器
+          <strong className="text-ink">不保留（zero retention）</strong>你的 Google
+          使用者資料。資料只在你操作的當下即時轉手寫進你自己的試算表／行事曆，
+          處理完就不再留存於我方。
+        </li>
+        <li>
+          <strong className="text-ink">刪除：</strong>你的紀錄一直存在你自己的 Google
+          Drive，你可以隨時檢視、匯出（Excel／CSV）或整份刪除；刪除試算表或資料夾後，
+          本 App 就再也讀不到任何東西——我方沒有任何其他副本。
+        </li>
+        <li>
+          <strong className="text-ink">撤銷授權：</strong>你可以隨時到 Google 帳號的
+          「第三方存取權（Third-party access）」撤銷本 App 的所有權限，撤銷後本 App
+          無法再存取你的任何資料。
+        </li>
+      </ul>
     ),
   },
   {
@@ -126,7 +168,7 @@ export function PrivacyContent({ compact = false }: { compact?: boolean }) {
             ignite.gospel.26@gmail.com
           </a>
         </p>
-        <p className="mt-1">最後更新：2026 年 7 月 10 日</p>
+        <p className="mt-1">最後更新：2026 年 7 月 13 日</p>
       </div>
     </div>
   );
