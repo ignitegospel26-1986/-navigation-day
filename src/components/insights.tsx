@@ -97,15 +97,13 @@ const tooltipStyle = {
   fontSize: 13,
 } as const;
 
-const RANGE_PRESETS: ["7" | "30" | "90" | "all", string][] = [
+const RANGE_PRESETS: ["7" | "all", string][] = [
   ["7", "近 7 天"],
-  ["30", "近 30 天"],
-  ["90", "近 90 天"],
   ["all", "全部"],
 ];
 
 function EnergyChart({ data }: { data: Analytics }) {
-  const [preset, setPreset] = useState<"7" | "30" | "90" | "all">("30");
+  const [preset, setPreset] = useState<"7" | "all">("7");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const custom = from !== "" || to !== "";
@@ -163,35 +161,38 @@ function EnergyChart({ data }: { data: Analytics }) {
           );
         })}
         <span className="mx-1 hidden text-muted sm:inline">|</span>
-        <input
-          type="date"
-          value={from}
-          max={to || undefined}
-          onChange={(e) => setFrom(e.target.value)}
-          aria-label="起始日期"
-          className="field px-2.5 py-1.5 text-[13px]"
-        />
-        <span className="text-muted">–</span>
-        <input
-          type="date"
-          value={to}
-          min={from || undefined}
-          onChange={(e) => setTo(e.target.value)}
-          aria-label="結束日期"
-          className="field px-2.5 py-1.5 text-[13px]"
-        />
-        {custom && (
-          <button
-            type="button"
-            onClick={() => {
-              setFrom("");
-              setTo("");
-            }}
-            className="btn btn-ghost px-2 py-1 text-[13px]"
-          >
-            清除
-          </button>
-        )}
+        {/* keep 起／訖 (and 清除) together on one row */}
+        <div className="flex w-full items-center gap-1.5 sm:w-auto">
+          <input
+            type="date"
+            value={from}
+            max={to || undefined}
+            onChange={(e) => setFrom(e.target.value)}
+            aria-label="起始日期"
+            className="field min-w-0 flex-1 px-2 py-1.5 text-[13px] sm:flex-initial"
+          />
+          <span className="text-muted">–</span>
+          <input
+            type="date"
+            value={to}
+            min={from || undefined}
+            onChange={(e) => setTo(e.target.value)}
+            aria-label="結束日期"
+            className="field min-w-0 flex-1 px-2 py-1.5 text-[13px] sm:flex-initial"
+          />
+          {custom && (
+            <button
+              type="button"
+              onClick={() => {
+                setFrom("");
+                setTo("");
+              }}
+              className="btn btn-ghost shrink-0 px-2 py-1 text-[13px]"
+            >
+              清除
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card p-4 sm:p-6">
