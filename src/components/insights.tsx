@@ -48,7 +48,7 @@ export function Insights() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-10">
+      <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-6 sm:py-10">
         <h1 className="font-serif text-3xl font-medium tracking-tight text-ink">
           分析與洞見
         </h1>
@@ -75,7 +75,7 @@ export function Insights() {
         )}
 
         {state === "ready" && data && (
-          <div className="mt-10 space-y-10">
+          <div className="mt-6 space-y-8 sm:mt-10 sm:space-y-10">
             <div className="space-y-4">
               <ToneBar data={data} />
               <EnergyChart data={data} />
@@ -201,7 +201,7 @@ function EnergyChart({ data }: { data: Analytics }) {
             這個範圍內少於兩筆紀錄，換個時間範圍看看。
           </p>
         ) : (
-          <div className="h-72 w-full">
+          <div className="h-64 w-full sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={points} margin={{ top: 8, right: 4, bottom: 4, left: -20 }}>
                 <CartesianGrid stroke="var(--hairline)" strokeDasharray="3 3" vertical={false} />
@@ -319,7 +319,7 @@ function QuarterCompare({ data }: { data: Analytics }) {
   return (
     <section>
       <h2 className="mb-4 font-serif text-xl text-ink">本季 vs 上季</h2>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <StatCard
           label={`本季 ${c.current.label}`}
           avg={c.current.avgEnergy}
@@ -357,13 +357,13 @@ function StatCard({
   highlight?: boolean;
 }) {
   return (
-    <div className={`card p-6 ${highlight ? "ring-1 ring-accent/30" : ""}`}>
-      <p className="text-[13px] text-muted">{label}</p>
-      <p className="mt-2 font-serif text-4xl text-ink tabular-nums">
+    <div className={`card p-4 sm:p-6 ${highlight ? "ring-1 ring-accent/30" : ""}`}>
+      <p className="text-[12px] text-muted sm:text-[13px]">{label}</p>
+      <p className="mt-2 font-serif text-3xl text-ink tabular-nums sm:text-4xl">
         {avg === null ? "—" : avg}
         <span className="ml-1 text-base text-muted">/ 10</span>
       </p>
-      <p className="mt-1 text-[13px] text-muted">{count} 次打卡</p>
+      <p className="mt-1 text-[12px] text-muted sm:text-[13px]">{count} 次打卡</p>
     </div>
   );
 }
