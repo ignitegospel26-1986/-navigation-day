@@ -6,7 +6,11 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "導航日",
     description:
       "一個給自己的長期覺察空間。所有紀錄只存在你自己的 Google 帳號裡。",
+    id: "/",
     start_url: "/dashboard",
+    // Whole-site scope so the Android TWA keeps landing / privacy / dashboard
+    // in-app instead of opening them in an external browser.
+    scope: "/",
     display: "standalone",
     background_color: "#f4efe4",
     theme_color: "#f4efe4",
