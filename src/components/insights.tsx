@@ -97,25 +97,107 @@ const tooltipStyle = {
   fontSize: 13,
 } as const;
 
+const RANGE_PRESETS: ["7" | "30" | "90" | "all", string][] = [
+  ["7", "近 7 天"],
+  ["30", "近 30 天"],
+  ["90", "近 90 天"],
+  ["all", "全部"],
+];
+
 function EnergyChart({ data }: { data: Analytics }) {
+  const [preset, setPreset] = useState<"7" | "30" | "90" | "all">("30");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const custom = from !== "" || to !== "";
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  // Resolve the active [lo, hi] date window (YYYY-MM-DD; "" = unbounded).
+  let lo = "";
+  let hi = "";
+  if (custom) {
+    lo = from;
+    hi = to;
+  } else if (preset !== "all") {
+    const today = new Date();
+    const f = new Date(today);
+    f.setDate(today.getDate() - (Number(preset) - 1));
+    lo = iso(f);
+    hi = iso(today);
+  }
+
   const points = data.energyTrend
     .filter((p) => p.energy !== null || p.direction !== null)
-    .map((p) => ({
-      date: p.date.slice(5),
-      energy: p.energy,
-      direction: p.direction,
-    }));
+    .filter((p) => (!lo || p.date >= lo) && (!hi || p.date <= hi))
+    .map((p) => ({ date: p.date.slice(5), energy: p.energy, direction: p.direction }));
 
   return (
     <section>
-      <div className="mb-4 flex items-baseline justify-between">
+      <div className="mb-3 flex items-baseline justify-between">
         <h2 className="font-serif text-xl text-ink">活力值 × 生活方向趨勢</h2>
         <span className="text-[13px] text-muted">{points.length} 筆</span>
       </div>
+
+      {/* range selector: quick presets + custom 起／訖 */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {RANGE_PRESETS.map(([v, label]) => {
+          const active = !custom && preset === v;
+          return (
+            <button
+              key={v}
+              type="button"
+              onClick={() => {
+                setPreset(v);
+                setFrom("");
+                setTo("");
+              }}
+              className={`rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                active
+                  ? "bg-accent text-[#fbf7ee] dark:text-[#16130f]"
+                  : "border border-hairline text-ink-soft hover:text-ink"
+              }`}
+            >
+              {label}
+            </button>
+          );
+        })}
+        <span className="mx-1 hidden text-muted sm:inline">|</span>
+        <input
+          type="date"
+          value={from}
+          max={to || undefined}
+          onChange={(e) => setFrom(e.target.value)}
+          aria-label="起始日期"
+          className="field px-2.5 py-1.5 text-[13px]"
+        />
+        <span className="text-muted">–</span>
+        <input
+          type="date"
+          value={to}
+          min={from || undefined}
+          onChange={(e) => setTo(e.target.value)}
+          aria-label="結束日期"
+          className="field px-2.5 py-1.5 text-[13px]"
+        />
+        {custom && (
+          <button
+            type="button"
+            onClick={() => {
+              setFrom("");
+              setTo("");
+            }}
+            className="btn btn-ghost px-2 py-1 text-[13px]"
+          >
+            清除
+          </button>
+        )}
+      </div>
+
       <div className="card p-4 sm:p-6">
         {points.length < 2 ? (
           <p className="py-16 text-center text-sm text-muted">
-            至少兩次打卡就會畫出趨勢線。
+            這個範圍內少於兩筆紀錄，換個時間範圍看看。
           </p>
         ) : (
           <div className="h-72 w-full">

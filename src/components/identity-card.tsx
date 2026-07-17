@@ -19,10 +19,17 @@ export function IdentityCard({
   text,
   period,
   onClose,
+  closeLabel = "完成，回主控台",
+  celebrate = true,
 }: {
   text: string;
   period: string;
   onClose: () => void;
+  /** Label for the dismiss button (history reuse: e.g. "返回紀錄"). */
+  closeLabel?: string;
+  /** Show the "完成了" celebration eyebrow (quarterly completion) vs. a plain
+   *  header (viewing a past card from history). */
+  celebrate?: boolean;
 }) {
   const [saving, setSaving] = useState(false);
   const declaration = text.trim() || "我是一個會為自己而活的人";
@@ -54,10 +61,16 @@ export function IdentityCard({
       transition={{ duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }}
       className="flex flex-col items-center"
     >
-      <p className="text-sm tracking-[0.2em] text-accent">完成了</p>
-      <h2 className="mt-3 font-serif text-2xl text-ink">你的身分宣告卡</h2>
+      {celebrate && (
+        <p className="text-sm tracking-[0.2em] text-accent">完成了</p>
+      )}
+      <h2 className={`${celebrate ? "mt-3" : ""} font-serif text-2xl text-ink`}>
+        你的身分宣告卡
+      </h2>
       <p className="mt-2 text-center text-[14px] text-muted">
-        這張卡只在你的裝置上生成，不會上傳、不會分享。
+        {celebrate
+          ? "這張卡只在你的裝置上生成，不會上傳、不會分享。"
+          : "這是你在這一季寫下的身分宣告。卡片只在你的裝置上生成。"}
       </p>
 
       {/* On-screen preview — mirrors the exported PNG */}
@@ -106,7 +119,7 @@ export function IdentityCard({
           onClick={onClose}
           className="btn btn-ghost px-5 py-3 text-[15px]"
         >
-          完成，回主控台
+          {closeLabel}
         </button>
       </div>
     </motion.div>

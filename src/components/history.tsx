@@ -6,6 +6,7 @@ import { Brand } from "@/components/brand";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Modal } from "@/components/ui/modal";
 import { ScaleInput } from "@/components/scale-input";
+import { IdentityCard } from "@/components/identity-card";
 import { MODULES, ModuleKey, prompt, type Tone } from "@/lib/prompts";
 import { parseRow } from "@/lib/schema";
 import {
@@ -442,9 +443,11 @@ function DetailModal({
   const [saving, setSaving] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showCard, setShowCard] = useState(false);
 
   useEffect(() => {
     if (!detail) return;
+    setShowCard(false);
     if (detail.values) {
       const parsed = parseRow(detail.module, detail.values);
       const a: Record<string, string | number> = {};
@@ -476,6 +479,7 @@ function DetailModal({
     (q) => String(answers[q.key] ?? "").trim() === ""
   ).length;
   const hasAny = emptyCount < questions.length;
+  const identityText = String(answers.identity ?? "").trim();
 
   async function doSave() {
     if (!detail) return;
@@ -506,6 +510,20 @@ function DetailModal({
       return;
     }
     doSave();
+  }
+
+  if (showCard && detail?.module === "quarterly") {
+    return (
+      <Modal open={open} onClose={onClose} labelledBy="detail-title">
+        <IdentityCard
+          text={identityText}
+          period={detail.period}
+          onClose={() => setShowCard(false)}
+          closeLabel="返回紀錄"
+          celebrate={false}
+        />
+      </Modal>
+    );
   }
 
   return (
@@ -555,6 +573,15 @@ function DetailModal({
         </div>
       ) : mode === "view" ? (
         <div className="max-h-[62vh] space-y-5 overflow-y-auto pr-2">
+          {module === "quarterly" && identityText && (
+            <button
+              type="button"
+              onClick={() => setShowCard(true)}
+              className="btn btn-primary w-full px-5 py-3 text-sm"
+            >
+              查看身分宣告卡
+            </button>
+          )}
           {questions.map((q) => {
             const ans = String(answers[q.key] ?? "").trim();
             return (
